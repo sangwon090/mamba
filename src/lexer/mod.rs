@@ -308,13 +308,12 @@ impl Lexer {
 
                     _ => {
                         let mut ident_buffer = String::new();
+                        ident_buffer.push(*char);
 
                         loop {
-                            if self.pos < self.source[self.line].len() {
-                                let current = self.source[self.line][self.pos];
-
-                                if current.is_ascii_alphanumeric() || current == '_' {
-                                    ident_buffer.push(current);
+                            if let Some(next) = self.next() {
+                                if next.is_ascii_alphanumeric() || next == '_' {
+                                    ident_buffer.push(next);
                                     self.pos += 1;
                                 } else {
                                     break;
