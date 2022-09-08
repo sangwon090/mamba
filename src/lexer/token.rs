@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Token {
     Identifier(String),
     Keyword(Keyword),
@@ -60,18 +60,17 @@ pub enum Token {
     EOF,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Keyword {
     Let,
     Def,
     Int,
     Void,
-    String,
+    Return,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Literal {
     Number(i64),
-    Float(f64),
     String(String),
 }
