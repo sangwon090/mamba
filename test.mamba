@@ -1,0 +1,12 @@
+let a: int = 2;
+let b: int = 5;
+let c: int = -(3 - (a * b));
+
+def fibo(n: int) -> int:
+    if n <= 0:
+        return 0;
+    else:
+        if n == 1:
+            return 1;
+        else:
+            return fibo(n - 2) + fibo(n - 1);

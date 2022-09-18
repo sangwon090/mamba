@@ -1,6 +1,9 @@
-#[derive(Debug, PartialEq, Eq)]
+use crate::parser::ast::{Expression, AstNodeType};
+use core::any::Any;
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
-    Identifier(String),
+    Identifier(Identifier),
     Keyword(Keyword),
     Literal(Literal),
     
@@ -60,17 +63,51 @@ pub enum Token {
     EOF,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Identifier(pub String);
+
+impl Expression for Identifier {
+    fn to_string(&self) -> String {
+        format!("{}", self.0)
+    }
+
+    fn get_type(&self) -> AstNodeType {
+        AstNodeType::Identifier
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Keyword {
+    If,
+    Else,
     Let,
     Def,
     Int,
+    Str,
     Void,
     Return,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Literal {
     Number(i64),
     String(String),
+}
+
+impl Expression for Literal {
+    fn to_string(&self) -> String {
+        format!("{:?}", self)
+    }
+
+    fn get_type(&self) -> AstNodeType {
+        AstNodeType::Literal
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }

@@ -1,5 +1,5 @@
 mod token;
-pub use token::{Token, Keyword, Literal};
+pub use token::{Token, Identifier, Keyword, Literal};
 
 use crate::error::LexerError;
 
@@ -32,11 +32,15 @@ impl Lexer {
 
     fn read_ident(ident: &str) -> Token {
         match ident {
+            "if" => Token::Keyword(Keyword::If),
+            "else" => Token::Keyword(Keyword::Else),
             "def" => Token::Keyword(Keyword::Def),
             "let" => Token::Keyword(Keyword::Let),
             "int" => Token::Keyword(Keyword::Int),
+            "str" => Token::Keyword(Keyword::Str),
             "void" => Token::Keyword(Keyword::Void),
-            _ => Token::Identifier(ident.into()),
+            "return" => Token::Keyword(Keyword::Return),
+            _ => Token::Identifier(Identifier(ident.into())),
         }
     }
 
@@ -118,6 +122,7 @@ impl Lexer {
 
     pub fn get_tokens(&mut self) -> Result<Vec<Token>, LexerError> {
         let mut tokens: Vec<Token> = Vec::new();
+        let mut indent_count: usize = 0;
 
         for i in 0..self.source.len() {
             self.pos = 0;
@@ -129,30 +134,59 @@ impl Lexer {
             if indent_diff > 0 {
                 for _ in 0..indent_diff {
                     tokens.push(Token::Indent);
+                    indent_count += 1;
                 }
             } else if indent_diff < 0 {
                 for _ in 0..-indent_diff {
                     tokens.push(Token::Dedent);
+                    indent_count -= 1;
                 }
             }
 
             self.indent = indent;
 
             while self.pos < self.source[self.line].len() {
-                let current = self.source[self.line][self.pos];
-
-                match current {
-                    ' ' => (),
-                    '#' => break,
+                match self.source[self.line][self.pos] {
+                    ' ' => {
+                        self.pos += 1;
+                    },
+                    '#' => {
+                        self.pos += 1;
+                        break;
+                    },
                     '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => tokens.push(Token::Literal(Literal::Number(self.read_number()))),
-                    '"' => tokens.push(Token::Literal(Literal::String(self.read_string().unwrap()))),
-                    '(' => tokens.push(Token::LParen),
-                    ')' => tokens.push(Token::RParen),
-                    '[' => tokens.push(Token::LSqBr),
-                    ']' => tokens.push(Token::RSqBr),
-                    ':' => tokens.push(Token::Colon),
-                    ',' => tokens.push(Token::Comma),
-                    ';' => tokens.push(Token::Semicolon),
+                    '"' => {
+                        tokens.push(Token::Literal(Literal::String(self.read_string().unwrap())));
+                        self.pos += 1;
+                    },
+                    '(' => {
+                        tokens.push(Token::LParen);
+                        self.pos += 1;
+                    },
+                    ')' => {
+                        tokens.push(Token::RParen);
+                        self.pos += 1;
+                    },
+                    '[' => {
+                        tokens.push(Token::LSqBr);
+                        self.pos += 1;
+                    },
+                    ']' => {
+                        tokens.push(Token::RSqBr);
+                        self.pos += 1;
+                    },
+                    ':' => {
+                        tokens.push(Token::Colon);
+                        self.pos += 1;
+                    },
+                    ',' => {
+                        tokens.push(Token::Comma);
+                        self.pos += 1;
+                    },
+                    ';' => {
+                        tokens.push(Token::Semicolon);
+                        self.pos += 1;
+                    },
                     '+' => {
                         if let Some(next) = &self.next(1) {
                             if *next == '=' {
@@ -163,6 +197,7 @@ impl Lexer {
                         }
 
                         tokens.push(Token::Plus);
+                        self.pos += 1;
                     },
                     '-' => {
                         if let Some(next) = &self.next(1) {
@@ -177,7 +212,8 @@ impl Lexer {
                             }
                         }
 
-                        tokens.push(Token::Minus)
+                        tokens.push(Token::Minus);
+                        self.pos += 1;
                     },
                     '*' => {
                         if let Some(next) = &self.next(1) {
@@ -188,7 +224,8 @@ impl Lexer {
                             }
                         }
 
-                        tokens.push(Token::Star)
+                        tokens.push(Token::Star);
+                        self.pos += 1;
                     },
                     '/' => {
                         if let Some(next) = &self.next(1) {
@@ -199,7 +236,8 @@ impl Lexer {
                             }
                         }
 
-                        tokens.push(Token::Slash)
+                        tokens.push(Token::Slash);
+                        self.pos += 1;
                     },
                     '|' => {
                         if let Some(next) = &self.next(1) {
@@ -210,7 +248,8 @@ impl Lexer {
                             }
                         }
 
-                        tokens.push(Token::VBar)
+                        tokens.push(Token::VBar);
+                        self.pos += 1;
                     },
                     '&' => {
                         if let Some(next) = &self.next(1) {
@@ -221,7 +260,8 @@ impl Lexer {
                             }
                         }
 
-                        tokens.push(Token::Ampersand)
+                        tokens.push(Token::Ampersand);
+                        self.pos += 1;
                     },
                     '<' => {
                         if let Some(next) = &self.next(1) {
@@ -249,6 +289,7 @@ impl Lexer {
                         }
 
                         tokens.push(Token::Less);
+                        self.pos += 1;
                     },
                     '>' => {
                         if let Some(next) = &self.next(1) {
@@ -276,6 +317,7 @@ impl Lexer {
                         }
 
                         tokens.push(Token::Greater);
+                        self.pos += 1;
                     },
                     '=' => {
                         if let Some(next) = &self.next(1) {
@@ -287,8 +329,12 @@ impl Lexer {
                         }
 
                         tokens.push(Token::Equal);
+                        self.pos += 1;
                     },
-                    '.' => tokens.push(Token::Dot),
+                    '.' => {
+                        tokens.push(Token::Dot);
+                        self.pos += 1;
+                    },
                     '%' => {
                         if let Some(next) = &self.next(1) {
                             if *next == '=' {
@@ -298,10 +344,20 @@ impl Lexer {
                         }
 
                         tokens.push(Token::Percent);
+                        self.pos += 1;
                     },
-                    '{' => tokens.push(Token::LBrace),
-                    '}' => tokens.push(Token::RBrace),
-                    '~' => tokens.push(Token::Tilde),
+                    '{' => {
+                        tokens.push(Token::LBrace);
+                        self.pos += 1;
+                    },
+                    '}' => {
+                        tokens.push(Token::RBrace);
+                        self.pos += 1;
+                    },
+                    '~' => {
+                        tokens.push(Token::Tilde);
+                        self.pos += 1;
+                    }
                     '^' => {
                         if let Some(next) = &self.next(1) {
                             if *next == '=' {
@@ -312,6 +368,7 @@ impl Lexer {
                         }
 
                         tokens.push(Token::Circumflex);
+                        self.pos += 1;
                     },
                     '!' => {
                         if let Some(next) = &self.next(1) {
@@ -322,14 +379,18 @@ impl Lexer {
                             }
                         }
                     },
-
-                    _ => tokens.push(Lexer::read_ident(&self.read_identifier())),
+                    _ => {
+                        tokens.push(Lexer::read_ident(&self.read_identifier()));
+                        self.pos += 1;
+                    },
                 }
-
-                self.pos += 1;
             }
         }
 
+        for _ in 0..indent_count {
+            tokens.push(Token::Dedent);
+        }
+        
         tokens.push(Token::EOF);
 
         Ok(tokens)
