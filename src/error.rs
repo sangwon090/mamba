@@ -3,6 +3,7 @@ use std::fmt;
 pub struct LexerError(pub String);
 pub struct ParseError(pub String);
 pub struct CompileError(pub String);
+pub struct IRGenError(pub String);
 
 impl fmt::Display for LexerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -22,6 +23,12 @@ impl fmt::Display for CompileError {
     }
 }
 
+impl fmt::Display for IRGenError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "IR Generator Error: {}", self.0)
+    }
+}
+
 impl fmt::Debug for LexerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
@@ -35,6 +42,12 @@ impl fmt::Debug for ParseError {
 }
 
 impl fmt::Debug for CompileError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::Debug for IRGenError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
     }

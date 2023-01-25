@@ -1,6 +1,7 @@
 let a: int = 2;
 let b: int = 5;
 let c: int = -(3 - (a * b));
+let d: str = "Hi!";
 
 def fibo(n: int) -> int:
     if n <= 0:

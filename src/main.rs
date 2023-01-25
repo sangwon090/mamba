@@ -4,6 +4,7 @@ use std::env;
 
 use mamba::lexer::Lexer;
 use mamba::parser::Parser;
+use mamba::irgen::IRGen;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -25,9 +26,8 @@ fn main() {
             let mut parser = Parser::new(tokens);
             let ast = parser.parse_all();
 
-            for statement in ast.statements {
-                println!("{}", statement.to_string());
-            }
+            let mut irgen = IRGen::new(ast);
+            let ir = irgen.generate_ir().unwrap();
         }
     } else {
         let file = &args[1];
@@ -39,8 +39,14 @@ fn main() {
         let mut parser = Parser::new(tokens);
         let ast = parser.parse_all();
 
-        for statement in ast.statements {
+        
+        for statement in &ast.statements {
             println!("{}", statement.to_string());
         }
+
+        let mut irgen = IRGen::new(ast);
+        let ir = irgen.generate_ir().unwrap();
+        
+        println!("===== Generated IR =====\n{}", ir);
     }
 }
