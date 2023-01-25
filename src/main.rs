@@ -4,7 +4,6 @@ use std::env;
 
 use mamba::lexer::Lexer;
 use mamba::parser::Parser;
-use mamba::asm::AsmGenerator;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -26,10 +25,9 @@ fn main() {
             let mut parser = Parser::new(tokens);
             let ast = parser.parse_all();
 
-            let mut asm_gen = AsmGenerator::new(ast);
-            let result = asm_gen.generate_asm().unwrap();
-
-            println!("{}", result);
+            for statement in ast.statements {
+                println!("{}", statement.to_string());
+            }
         }
     } else {
         let file = &args[1];
@@ -41,9 +39,8 @@ fn main() {
         let mut parser = Parser::new(tokens);
         let ast = parser.parse_all();
 
-        let mut asm_gen = AsmGenerator::new(ast);
-        let result = asm_gen.generate_asm().unwrap();
-
-        println!("{}", result);
+        for statement in ast.statements {
+            println!("{}", statement.to_string());
+        }
     }
 }
