@@ -6,9 +6,9 @@ use core::any::Any;
 use super::pratt::Precedence;
 
 pub struct IfStatement {
-    condition: Box<dyn Expression>,
-    then: Box<dyn Statement>,
-    r#else: Option<Box<dyn Statement>>,
+    pub condition: Box<dyn Expression>,
+    pub then: Box<dyn Statement>,
+    pub r#else: Option<Box<dyn Statement>>,
 }
 
 impl Statement for IfStatement {

@@ -1,6 +1,7 @@
 use std::io::{self, Write, BufRead};
 use std::fs;
 use std::env;
+use std::process::{Command, Stdio};
 
 use mamba::lexer::Lexer;
 use mamba::parser::Parser;
@@ -39,14 +40,25 @@ fn main() {
         let mut parser = Parser::new(tokens);
         let ast = parser.parse_all();
 
-        
         for statement in &ast.statements {
             println!("{}", statement.to_string());
         }
 
         let mut irgen = IRGen::new(ast);
         let ir = irgen.generate_ir().unwrap();
+        println!("===== Generated IR =====\n{}\n", ir);
+
+        let mut llc = Command::new("llc")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn().unwrap();
         
-        println!("===== Generated IR =====\n{}", ir);
+        let llc_stdin = llc.stdin.as_mut().unwrap();
+        llc_stdin.write_all(ir.as_bytes()).unwrap();
+        drop(llc_stdin);
+
+        let asm = llc.wait_with_output().unwrap().stdout;
+
+        println!("===== Generated ASM =====\n{}\n", String::from_utf8_lossy(&asm));
     }
 }
