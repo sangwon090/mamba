@@ -29,6 +29,15 @@ pub trait Statement {
     fn as_any(&self) -> &dyn Any;
 }
 
+#[macro_export]
+macro_rules! downcast {
+    ($type:ident, $stmt:expr) => {
+        $stmt.as_any().downcast_ref::<$type>().unwrap()
+    }
+}
+
+pub(crate) use downcast;
+
 pub trait Expression {
     //fn parse(parser: &mut Parser) -> Result<Self, ParseError> where Self: Sized;
     fn to_string(&self) -> String;

@@ -1,13 +1,13 @@
 pub mod expr;
 
 use std::collections::{HashMap};
-
 use crate::parser::{LetStatement, DefStatement, IfStatement, ReturnStatement};
 use crate::parser::ast::{AbstractSyntaxTree, AstNodeType, Expression, InfixExpression, Operator};
 use crate::types::DataType;
 use crate::{error::IRGenError};
 use crate::lexer::{Literal, Identifier};
 use crate::irgen::expr::*;
+use crate::downcast;
 
 pub struct IRGen {
     ast: AbstractSyntaxTree,
@@ -36,7 +36,7 @@ impl IRGen {
 
         self.ast.statements.retain(|statement| {
             if statement.get_type() == AstNodeType::LetStatement {
-                let let_statement = statement.as_any().downcast_ref::<LetStatement>().unwrap();
+                let let_statement = downcast!(LetStatement, statement);
                 
                 println!("constexpr {} is {:?}!!!", let_statement.identifier.to_string(), eval_constexpr(&let_statement.expression, &self.global_var));
 
@@ -72,7 +72,7 @@ impl IRGen {
 
         self.ast.statements.retain(|statement| {
             if statement.get_type() == AstNodeType::DefStatement {
-                let def_statement = statement.as_any().downcast_ref::<DefStatement>().unwrap();
+                let def_statement = downcast!(DefStatement, statement);
 
                 let parameters: Vec<String> = def_statement.parameters.iter().map(|(identifier, _)|
                     format!("i64 %{}", identifier.to_string())
@@ -84,7 +84,7 @@ impl IRGen {
                     match statement.get_type() {
                         AstNodeType::LetStatement => todo!("let statement in fnCall"),
                         AstNodeType::IfStatement => {
-                            let statement = statement.as_any().downcast_ref::<IfStatement>().unwrap();
+                            let statement = downcast!(IfStatement, statement);
                             let condition = &statement.condition;
 
                             // block for comparison
@@ -93,7 +93,7 @@ impl IRGen {
 
                             match condition.get_type() {
                                 AstNodeType::InfixExpression => {
-                                    let expression = condition.as_any().downcast_ref::<InfixExpression>().unwrap();
+                                    let expression = downcast!(InfixExpression, condition);
 
                                     println!("expression: {}", expression.to_string());
                                     println!("expr.left: {}, expr.right: {}", expression.left.to_string(), expression.right.to_string());
@@ -109,9 +109,9 @@ impl IRGen {
                                         _ => todo!("todo: implement non-comparison operators for if condition")
                                     };
                                     let left = match expression.left.get_type() {
-                                        AstNodeType::Identifier => format!("%{}", expression.left.as_any().downcast_ref::<Identifier>().unwrap().to_string()),
+                                        AstNodeType::Identifier => format!("%{}", downcast!(Identifier, expression.left).to_string()),
                                         AstNodeType::Literal => {
-                                            let literal = expression.left.as_any().downcast_ref::<Literal>().unwrap();
+                                            let literal = downcast!(Literal, expression);
 
                                             if let Literal::Number(n) = literal {
                                                 *n
@@ -123,9 +123,9 @@ impl IRGen {
                                         _ => todo!("todo: implement complex expreession for operand")
                                     };
                                     let right = match expression.right.get_type() {
-                                        AstNodeType::Identifier => format!("%{}", expression.right.as_any().downcast_ref::<Identifier>().unwrap().to_string()),
+                                        AstNodeType::Identifier => format!("%{}", downcast!(Identifier, expression.right).to_string()),
                                         AstNodeType::Literal => {
-                                            let literal = expression.right.as_any().downcast_ref::<Literal>().unwrap();
+                                            let literal = downcast!(Literal, expression.right);
 
                                             if let Literal::Number(n) = literal {
                                                 *n

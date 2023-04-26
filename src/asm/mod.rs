@@ -29,7 +29,7 @@ impl AsmGenerator {
             let statement_type = statement.get_type();
 
             if statement_type == AstNodeType::LetStatement {
-                let let_statement = statement.as_any().downcast_ref::<LetStatement>().unwrap();
+                let let_statement = downcast_stmt!(LetStatement, statement);
                 
                 if let DataType::Int = let_statement.r#type {
                     if self.variables.contains_key(&let_statement.identifier.0) {
@@ -48,7 +48,7 @@ impl AsmGenerator {
 
             if statement_type == AstNodeType::DefStatement {
                 let mut code = String::new();
-                let def_statement = statement.as_any().downcast_ref::<DefStatement>().unwrap();
+                let def_statement = downcast!(DefStatement, statement);
                 let mut parameters: HashMap<String, usize> = HashMap::new();
                 let mut parameter_count: usize = 0;
 
@@ -99,7 +99,7 @@ impl AsmGenerator {
     fn eval_expression(&self, expression: &Box<dyn Expression>) -> Result<i64, CompileError> {
         match expression.get_type() {
             AstNodeType::Identifier => {
-                let identifier = expression.as_any().downcast_ref::<Identifier>().unwrap().to_string();
+                let identifier = downcast!(Identifier, expression);
 
                 if self.variables.contains_key(&identifier) {
                     return Ok(*self.variables.get(&identifier).unwrap());
@@ -108,7 +108,7 @@ impl AsmGenerator {
                 }
             }
             AstNodeType::Literal => {
-                let literal = expression.as_any().downcast_ref::<Literal>().unwrap();
+                let literal = downcast!(Literal, expression);
                 let literal = if let Literal::Number(number) = literal {
                     *number
                 } else {
@@ -118,7 +118,7 @@ impl AsmGenerator {
                 return Ok(literal)
             }
             AstNodeType::InfixExpression => {
-                let infix = expression.as_any().downcast_ref::<InfixExpression>().unwrap();
+                let infix = downcast!(InfixExpression, expression);
                 let left = self.eval_expression(&infix.left).unwrap();
                 let right = self.eval_expression(&infix.right).unwrap();
 
@@ -137,7 +137,7 @@ impl AsmGenerator {
                 return Ok(result)
             },
             AstNodeType::PrefixExpression => {
-                let prefix = expression.as_any().downcast_ref::<PrefixExpression>().unwrap();
+                let prefix = downcast!(PrefixExpression, expression);
                 let right = self.eval_expression(&prefix.right).unwrap();
 
                 let result = match prefix.operator {
@@ -159,7 +159,7 @@ impl AsmGenerator {
 
             },
             AstNodeType::ReturnStatement => {
-                let return_statement = statement.as_any().downcast_ref::<ReturnStatement>().unwrap();
+                let return_statement = downcast!(ReturnStatement, statement);
                 self.compile_expression(code, &return_statement.expression, "r10").unwrap();
                 code.push_str("mov rax, r10");
                 code.push_str("ret");
@@ -172,7 +172,7 @@ impl AsmGenerator {
     fn compile_expression(&self, code: &mut String, expression: &Box<dyn Expression>, reg: &str) -> Result<(), CompileError> {
         match expression.get_type() {
             AstNodeType::FnCallExpression => {
-                let fncall = expression.as_any().downcast_ref::<FnCallExpression>().unwrap();
+                let fncall = downcast!(FnCallExpression, expression);
                 let mut argument_count: usize = 0;
 
                 for argument in &fncall.arguments {
@@ -189,13 +189,13 @@ impl AsmGenerator {
                 code.push_str(&format!("call {}\n", fncall.identifier.to_string()));
             },
             AstNodeType::Identifier => {
-                let identifier = expression.as_any().downcast_ref::<Identifier>().unwrap().to_string();
+                let identifier = downcast!(Identifier, expression);
 
                 println!("nothing to do with identifier {}", identifier);
                 code.push_str("nop\n");
             },
             AstNodeType::Literal => {
-                let literal = expression.as_any().downcast_ref::<Literal>().unwrap();
+                let literal = downcast!(Literal, expression);
                 let literal = if let Literal::Number(number) = literal {
                     *number
                 } else {
@@ -205,7 +205,7 @@ impl AsmGenerator {
                 code.push_str(&format!("mov r10, {}\n", literal));
             },
             AstNodeType::PrefixExpression => {
-                let prefix = expression.as_any().downcast_ref::<PrefixExpression>().unwrap();
+                let prefix = downcast!(PrefixExpression, expression);
                 self.compile_expression(code, &prefix.right, "r10").unwrap();
 
                 let result = match prefix.operator {
@@ -221,7 +221,7 @@ impl AsmGenerator {
                 return Ok(result)
             },
             AstNodeType::InfixExpression => {
-                let infix = expression.as_any().downcast_ref::<InfixExpression>().unwrap();
+                let infix = downcast!(InfixExpression, expression);
                 self.compile_expression(code, &infix.left, "r10").unwrap();
                 self.compile_expression(code, &infix.right, "r11").unwrap();
 
