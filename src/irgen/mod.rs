@@ -1,4 +1,7 @@
+pub mod block;
 pub mod expr;
+pub mod function;
+pub mod instruction;
 
 use std::collections::{HashMap};
 use crate::parser::{LetStatement, DefStatement, IfStatement, ReturnStatement};
@@ -39,7 +42,7 @@ impl IRGen {
                 let let_statement = downcast!(LetStatement, statement);
                 
                 println!("constexpr {} is {:?}!!!", let_statement.identifier.to_string(), eval_constexpr(&let_statement.expression, &self.global_var));
-
+                
                 match eval_constexpr(&let_statement.expression, &self.global_var) {
                     Some(n) => {
                         self.global_var.insert(let_statement.identifier.0.clone(), n);
