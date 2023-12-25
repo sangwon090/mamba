@@ -55,7 +55,6 @@ fn main() {
         
         let llc_stdin = llc.stdin.as_mut().unwrap();
         llc_stdin.write_all(ir.as_bytes()).unwrap();
-        drop(llc_stdin);
 
         let asm = llc.wait_with_output().unwrap().stdout;
 
