@@ -1,7 +1,8 @@
 use crate::parser::ast::{Expression, AstNodeType};
+use serde::{Deserialize, Serialize};
 use core::any::Any;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub enum Token {
     Identifier(Identifier),
     Keyword(Keyword),
@@ -63,7 +64,7 @@ pub enum Token {
     EOF,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct Identifier(pub String);
 
 impl Expression for Identifier {
@@ -80,7 +81,7 @@ impl Expression for Identifier {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub enum Keyword {
     If,
     Else,
@@ -92,7 +93,7 @@ pub enum Keyword {
     Return,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub enum Literal {
     Number(i64),
     String(String),

@@ -1,5 +1,6 @@
 pub mod block;
 pub mod expr;
+pub mod expression;
 pub mod function;
 pub mod instruction;
 
@@ -17,7 +18,7 @@ pub struct IRGen {
     global_var: HashMap<String, i64>,
 }
 
-struct LabelCounter {
+pub struct LabelCounter {
     count: usize,
 }
 
@@ -78,7 +79,7 @@ impl IRGen {
 
         let cond = &if_statement.condition;
 
-        match cond.get_type() {
+        let cond_label = match cond.get_type() {
             AstNodeType::InfixExpression => {
                 let expr = downcast!(InfixExpression, cond);
 
@@ -95,11 +96,11 @@ impl IRGen {
                 let left = match expr.left.get_type() {
                     AstNodeType::Identifier => {
                         let left_label_ptr = counter.get_label();
-                        result += &format!("%{left_label_ptr} = alloca i64, align 8\n");
-                        result += &format!("store i64 %0, ptr %{left_label_ptr}, align 8\n");
+                        result += &format!("%{left_label_ptr} = alloca i64, align 8 ; copy left for if statement\n");
+                        result += &format!("store i64 %0, ptr %{left_label_ptr}, align 8 ; copy left for if statement\n");
                         
                         let left_label = counter.get_label();
-                        result += &format!("%{left_label} = load i64, ptr %{left_label_ptr}, align 8\n");
+                        result += &format!("%{left_label} = load i64, ptr %{left_label_ptr}, align 8 ; copy left for if statement?\n");
                         format!("%{left_label}")
                     },
                     AstNodeType::Literal => {
@@ -118,11 +119,11 @@ impl IRGen {
                 let right = match expr.right.get_type() {
                     AstNodeType::Identifier => {
                         let right_label_ptr = counter.get_label();
-                        result += &format!("%{right_label_ptr} = alloca i64, align 8\n");
-                        result += &format!("store i64 %0, ptr %{right_label_ptr}, align 8\n");
+                        result += &format!("%{right_label_ptr} = alloca i64, align 8; copy right for if statement\n");
+                        result += &format!("store i64 %0, ptr %{right_label_ptr}, align 8 ; copy right for if statement\n");
                         
                         let right_label = counter.get_label();
-                        result += &format!("%{right_label} = load i64, ptr %{right_label_ptr}, align 8\n");
+                        result += &format!("%{right_label} = load i64, ptr %{right_label_ptr}, align 8 ; copy right for if statement?\n");
 
                         format!("%{right_label}")
                     },
@@ -140,12 +141,62 @@ impl IRGen {
                 };
 
                 let cmp_result = counter.get_label();
-                result += &format!("%{cmp_result} = icmp {cond_code} i64 {}, {}\n", left, right);
+                result += &format!("%{cmp_result} = icmp {cond_code} i64 {}, {} ; store result for if statement\n", left, right);
+
+                cmp_result
             },
             AstNodeType::PrefixExpression => todo!("todo: implement prefix expression for if condition"),
             _ => panic!("invalid expression for if condition!"),
         };
 
+        let branch_true = counter.get_label();
+        let branch_false = counter.get_label();
+
+        result += &format!("br i1 %{}, label %{}, label %{} ; jump to label\n", cond_label, branch_true, branch_false);
+        result += &format!("{}:\n", branch_true);
+        result += &IRGen::generate_statement(&if_statement.then, counter).unwrap();
+        result += &format!("{}:\n", branch_false);
+        if let Some(stmt) = &if_statement.r#else {
+            result += &IRGen::generate_statement(&stmt, counter).unwrap();
+        }
+
+        Ok(result)
+    }
+
+    fn generate_expression(expression: &Box<dyn Expression>, counter: &mut LabelCounter) -> Result<(String, usize), IRGenError> {
+        let mut result: String = String::new();
+
+        result += "; code for expression!\n";
+
+        Ok((result, 0))
+    }
+
+    fn generate_statement(statement: &Box<dyn Statement>, counter: &mut LabelCounter) -> Result<String, IRGenError> {
+        let mut result: String = String::new();
+
+        match statement.get_type() {
+            AstNodeType::LetStatement => todo!("let statement in fnCall"),
+            AstNodeType::IfStatement => result += &IRGen::generate_if(downcast!(IfStatement, statement), counter).unwrap(),
+            AstNodeType::ReturnStatement => {
+                let stmt = downcast!(ReturnStatement, statement);
+
+                if stmt.expression.get_type() == AstNodeType::Literal {
+                    let literal = downcast!(Literal, stmt.expression);
+
+                    if let Literal::Number(n) = literal {
+                        result += &format!("ret i64 {}\n", n);
+                    } else {
+                        todo!("return value only supports number for now");
+                    }
+                } else {
+                    let (expr_code, expr_label) = IRGen::generate_expression(&stmt.expression, counter).unwrap();
+                    result += &expr_code;
+                    result += &format!("ret i64 %{}\n", expr_label);
+                }
+            }
+            _ => {},
+        }
+        
         Ok(result)
     }
 
@@ -165,8 +216,6 @@ impl IRGen {
         result += &format!("define i64 @{}({}) nounwind {{\n", def_statement.name.to_string(), params_result.join(", "));
         result += &format!("%{} = alloca i64, align 8 ; return value\n", return_label); // for return value
 
-        println!("return label is {return_label}");
-
         let parameters: HashMap<String, usize> = parameters.into_iter().map(|param| {
                 let new_label = label_idx.get_label();
                 result += &format!("%{} = alloca i64, align 8 ; parameter {}\n", new_label, param.0);
@@ -175,15 +224,9 @@ impl IRGen {
                 (param.0, new_label)
         }).collect();
 
-        /*
         for statement in &def_statement.statements {
-            match statement.get_type() {
-                AstNodeType::LetStatement => todo!("let statement in fnCall"),
-                AstNodeType::IfStatement => result += &IRGen::generate_if(downcast!(IfStatement, statement), &mut label_idx).unwrap(),
-                _ => {},
-            }
+            result += &IRGen::generate_statement(statement, &mut label_idx).unwrap();
         }
-         */
 
         result += "ret i64 0\n";
         result += &format!("}}\n");

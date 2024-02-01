@@ -1,3 +1,15 @@
-use crate::irgen::instruction::Instruction;
+pub struct Block {
+    pub name: String,
+    pub instructions: Vec<String>,
+}
 
-pub type Block = Vec<Instruction>;
+impl Block {
+    pub fn to_string(&self) -> String {
+        let mut result = String::new();
+
+        result += &format!(":{}\n", self.name);
+        result += &self.instructions.join("\n");
+
+        result
+    }
+}

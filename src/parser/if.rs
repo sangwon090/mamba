@@ -13,7 +13,7 @@ pub struct IfStatement {
 
 impl Statement for IfStatement {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
-        let condition = PrattParser::parse_expression(parser, Precedence::Lowest).unwrap();
+        let condition: Box<dyn Expression> = PrattParser::parse_expression(parser, Precedence::Lowest).unwrap();
         parser.pos += 1;
 
         if let Some(token) = parser.next(0) {
