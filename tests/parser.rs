@@ -1,6 +1,5 @@
-use mamba::lexer::{Lexer, Token, Keyword, Literal, Identifier};
+use mamba::lexer::{Lexer, Token};
 use mamba::parser::Parser;
-use mamba::parser::ast::Expression;
 use mamba::parser::pratt::PrattParser;
 
 fn get_tokens(source: &str) -> Vec<Token> {
@@ -8,55 +7,55 @@ fn get_tokens(source: &str) -> Vec<Token> {
     lexer.get_tokens().unwrap()
 }
 
-fn test_prefix_expression(tokens: Vec<Token>) -> Box<dyn Expression> {
+fn test_prefix_expression(tokens: Vec<Token>) -> String {
     let mut parser = Parser::new(tokens);
     let result = PrattParser::parse_nud(&mut parser).unwrap();
     
-    result
+    format!("{:?}", result)
 }
 
 #[test]
 fn test_prefix_expressions() {
-    assert_eq!(test_prefix_expression(get_tokens("+123")).to_string(), "{ operator: UnaryPlus, right: Number(123) }");
-    assert_eq!(test_prefix_expression(get_tokens("-123")).to_string(), "{ operator: UnaryMinus, right: Number(123) }");
-    assert_eq!(test_prefix_expression(get_tokens("~123")).to_string(), "{ operator: BitwiseNot, right: Number(123) }");
-    assert_eq!(test_prefix_expression(get_tokens("+foo")).to_string(), "{ operator: UnaryPlus, right: foo }");
-    assert_eq!(test_prefix_expression(get_tokens("-foo")).to_string(), "{ operator: UnaryMinus, right: foo }");
-    assert_eq!(test_prefix_expression(get_tokens("~foo")).to_string(), "{ operator: BitwiseNot, right: foo }");
+    assert_eq!(test_prefix_expression(get_tokens("+123")), "Prefix({ operator: UnaryPlus, right: Literal(Number(123)) })");
+    assert_eq!(test_prefix_expression(get_tokens("-123")), "Prefix({ operator: UnaryMinus, right: Literal(Number(123)) })");
+    assert_eq!(test_prefix_expression(get_tokens("~123")), "Prefix({ operator: BitwiseNot, right: Literal(Number(123)) })");
+    assert_eq!(test_prefix_expression(get_tokens("+foo")), "Prefix({ operator: UnaryPlus, right: Identifier(foo) })");
+    assert_eq!(test_prefix_expression(get_tokens("-foo")), "Prefix({ operator: UnaryMinus, right: Identifier(foo) })");
+    assert_eq!(test_prefix_expression(get_tokens("~foo")), "Prefix({ operator: BitwiseNot, right: Identifier(foo) })");
 }
 
-fn test_expression(tokens: Vec<Token>) -> Box<dyn Expression> {
+fn test_expression(tokens: Vec<Token>) -> String {
     let mut parser = Parser::new(tokens);
     let result = PrattParser::parse_expression(&mut parser, mamba::parser::pratt::Precedence::Lowest).unwrap();
 
-    result
+    format!("{:?}", result)
 }
 
 #[test]
 fn test_simple_expressions() {
-    assert_eq!(test_expression(get_tokens("a + b")).to_string(), "{ operator: Plus, left: a, right: b }");
-    assert_eq!(test_expression(get_tokens("a - b")).to_string(), "{ operator: Minus, left: a, right: b }");
-    assert_eq!(test_expression(get_tokens("a * b")).to_string(), "{ operator: Multiply, left: a, right: b }");
-    assert_eq!(test_expression(get_tokens("a / b")).to_string(), "{ operator: Divide, left: a, right: b }");
-    assert_eq!(test_expression(get_tokens("a % b")).to_string(), "{ operator: Modulo, left: a, right: b }");
-    assert_eq!(test_expression(get_tokens("a & b")).to_string(), "{ operator: BitwiseAnd, left: a, right: b }");
-    assert_eq!(test_expression(get_tokens("a ^ b")).to_string(), "{ operator: BitwiseXor, left: a, right: b }");
-    assert_eq!(test_expression(get_tokens("a | b")).to_string(), "{ operator: BitwiseOr, left: a, right: b }");
+    assert_eq!(test_expression(get_tokens("a + b")), "Infix({ operator: Plus, left: Identifier(a), right: Identifier(b) })");
+    assert_eq!(test_expression(get_tokens("a - b")), "Infix({ operator: Minus, left: Identifier(a), right: Identifier(b) })");
+    assert_eq!(test_expression(get_tokens("a * b")), "Infix({ operator: Multiply, left: Identifier(a), right: Identifier(b) })");
+    assert_eq!(test_expression(get_tokens("a / b")), "Infix({ operator: Divide, left: Identifier(a), right: Identifier(b) })");
+    assert_eq!(test_expression(get_tokens("a % b")), "Infix({ operator: Modulo, left: Identifier(a), right: Identifier(b) })");
+    assert_eq!(test_expression(get_tokens("a & b")), "Infix({ operator: BitwiseAnd, left: Identifier(a), right: Identifier(b) })");
+    assert_eq!(test_expression(get_tokens("a ^ b")), "Infix({ operator: BitwiseXor, left: Identifier(a), right: Identifier(b) })");
+    assert_eq!(test_expression(get_tokens("a | b")), "Infix({ operator: BitwiseOr, left: Identifier(a), right: Identifier(b) })");
 }
 
 #[test]
 fn test_mixed_expressions() {
-    assert_eq!(test_expression(get_tokens("-a * b")).to_string(), "{ operator: Multiply, left: { operator: UnaryMinus, right: a }, right: b }");
-    assert_eq!(test_expression(get_tokens("~-a")).to_string(), "{ operator: BitwiseNot, right: { operator: UnaryMinus, right: a } }");
-    assert_eq!(test_expression(get_tokens("a + b + c")).to_string(), "{ operator: Plus, left: { operator: Plus, left: a, right: b }, right: c }");
-    assert_eq!(test_expression(get_tokens("a + b - c")).to_string(), "{ operator: Minus, left: { operator: Plus, left: a, right: b }, right: c }");
-    assert_eq!(test_expression(get_tokens("a * b * c")).to_string(), "{ operator: Multiply, left: { operator: Multiply, left: a, right: b }, right: c }");
-    assert_eq!(test_expression(get_tokens("a * b / c")).to_string(), "{ operator: Divide, left: { operator: Multiply, left: a, right: b }, right: c }");
-    assert_eq!(test_expression(get_tokens("a + b * c + d / e - f")).to_string(), "{ operator: Minus, left: { operator: Plus, left: { operator: Plus, left: a, right: { operator: Multiply, left: b, right: c } }, right: { operator: Divide, left: d, right: e } }, right: f }");
-    assert_eq!(test_expression(get_tokens("5 > 4 == 3 < 4")).to_string(), "{ operator: Equal, left: { operator: Greater, left: Number(5), right: Number(4) }, right: { operator: Less, left: Number(3), right: Number(4) } }");
-    assert_eq!(test_expression(get_tokens("5 < 4 != 3 > 4")).to_string(), "{ operator: NotEqual, left: { operator: Less, left: Number(5), right: Number(4) }, right: { operator: Greater, left: Number(3), right: Number(4) } }");
-    assert_eq!(test_expression(get_tokens("1 + (2 + 3) + 4")).to_string(), "{ operator: Plus, left: { operator: Plus, left: Number(1), right: { operator: Plus, left: Number(2), right: Number(3) } }, right: Number(4) }");
-    assert_eq!(test_expression(get_tokens("(5 + 5) * 2")).to_string(), "{ operator: Multiply, left: { operator: Plus, left: Number(5), right: Number(5) }, right: Number(2) }");
-    assert_eq!(test_expression(get_tokens("2 / (5 + 5)")).to_string(), "{ operator: Divide, left: Number(2), right: { operator: Plus, left: Number(5), right: Number(5) } }");
-    assert_eq!(test_expression(get_tokens("-(5 + 5)")).to_string(), "{ operator: UnaryMinus, right: { operator: Plus, left: Number(5), right: Number(5) } }");
+    assert_eq!(test_expression(get_tokens("-a * b")), "Infix({ operator: Multiply, left: Prefix({ operator: UnaryMinus, right: Identifier(a) }), right: Identifier(b) })");
+    assert_eq!(test_expression(get_tokens("~-a")), "Prefix({ operator: BitwiseNot, right: Prefix({ operator: UnaryMinus, right: Identifier(a) }) })");
+    assert_eq!(test_expression(get_tokens("a + b + c")), "Infix({ operator: Plus, left: Infix({ operator: Plus, left: Identifier(a), right: Identifier(b) }), right: Identifier(c) })");
+    assert_eq!(test_expression(get_tokens("a + b - c")), "Infix({ operator: Minus, left: Infix({ operator: Plus, left: Identifier(a), right: Identifier(b) }), right: Identifier(c) })");
+    assert_eq!(test_expression(get_tokens("a * b * c")), "Infix({ operator: Multiply, left: Infix({ operator: Multiply, left: Identifier(a), right: Identifier(b) }), right: Identifier(c) })");
+    assert_eq!(test_expression(get_tokens("a * b / c")), "Infix({ operator: Divide, left: Infix({ operator: Multiply, left: Identifier(a), right: Identifier(b) }), right: Identifier(c) })");
+    assert_eq!(test_expression(get_tokens("a + b * c + d / e - f")), "Infix({ operator: Minus, left: Infix({ operator: Plus, left: Infix({ operator: Plus, left: Identifier(a), right: Infix({ operator: Multiply, left: Identifier(b), right: Identifier(c) }) }), right: Infix({ operator: Divide, left: Identifier(d), right: Identifier(e) }) }), right: Identifier(f) })");
+    assert_eq!(test_expression(get_tokens("5 > 4 == 3 < 4")), "Infix({ operator: Equal, left: Infix({ operator: Greater, left: Literal(Number(5)), right: Literal(Number(4)) }), right: Infix({ operator: Less, left: Literal(Number(3)), right: Literal(Number(4)) }) })");
+    assert_eq!(test_expression(get_tokens("5 < 4 != 3 > 4")), "Infix({ operator: NotEqual, left: Infix({ operator: Less, left: Literal(Number(5)), right: Literal(Number(4)) }), right: Infix({ operator: Greater, left: Literal(Number(3)), right: Literal(Number(4)) }) })");
+    assert_eq!(test_expression(get_tokens("1 + (2 + 3) + 4")), "Infix({ operator: Plus, left: Infix({ operator: Plus, left: Literal(Number(1)), right: Infix({ operator: Plus, left: Literal(Number(2)), right: Literal(Number(3)) }) }), right: Literal(Number(4)) })");
+    assert_eq!(test_expression(get_tokens("(5 + 5) * 2")), "Infix({ operator: Multiply, left: Infix({ operator: Plus, left: Literal(Number(5)), right: Literal(Number(5)) }), right: Literal(Number(2)) })");
+    assert_eq!(test_expression(get_tokens("2 / (5 + 5)")), "Infix({ operator: Divide, left: Literal(Number(2)), right: Infix({ operator: Plus, left: Literal(Number(5)), right: Literal(Number(5)) }) })");
+    assert_eq!(test_expression(get_tokens("-(5 + 5)")), "Prefix({ operator: UnaryMinus, right: Infix({ operator: Plus, left: Literal(Number(5)), right: Literal(Number(5)) }) })");
 }

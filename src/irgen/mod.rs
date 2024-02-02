@@ -1,17 +1,15 @@
 pub mod block;
 pub mod expr;
-pub mod expression;
 pub mod function;
 pub mod instruction;
 
-use std::collections::{HashMap};
-use crate::parser::{LetStatement, DefStatement, IfStatement, ReturnStatement};
-use crate::parser::ast::{AbstractSyntaxTree, AstNodeType, Expression, InfixExpression, Operator, Statement};
-use crate::types::DataType;
-use crate::{error::IRGenError};
-use crate::lexer::{Literal, Identifier};
+use std::borrow::Borrow;
+use std::collections::HashMap;
+use crate::parser::{LetStatement, DefStatement, IfStatement};
+use crate::parser::ast::{AbstractSyntaxTree, Expression, Operator, Statement};
+use crate::error::IRGenError;
+use crate::lexer::Literal;
 use crate::irgen::expr::*;
-use crate::downcast;
 
 pub struct IRGen {
     ast: AbstractSyntaxTree,
@@ -50,12 +48,10 @@ impl IRGen {
         let global_vars: Vec<LetStatement> = Vec::new();
 
         self.ast.statements.retain(|statement| {
-            if statement.get_type() == AstNodeType::LetStatement {
-                let let_statement = downcast!(LetStatement, statement);
-                                
-                match eval_constexpr(&let_statement.expression, &self.global_var) {
+            if let Statement::Let(stmt) = statement {                                
+                match eval_constexpr(&stmt.expression, &self.global_var) {
                     Some(n) => {
-                        self.global_var.insert(let_statement.identifier.0.clone(), n);
+                        self.global_var.insert(stmt.identifier.0.clone(), n);
                         true
                     },
                     None => {
@@ -79,10 +75,8 @@ impl IRGen {
 
         let cond = &if_statement.condition;
 
-        let cond_label = match cond.get_type() {
-            AstNodeType::InfixExpression => {
-                let expr = downcast!(InfixExpression, cond);
-
+        let cond_label = match cond {
+            Expression::Infix(expr) => {
                 let cond_code = match expr.operator {
                     Operator::Equal => "eq",
                     Operator::NotEqual => "ne",
@@ -93,8 +87,8 @@ impl IRGen {
                     _ => todo!("todo: implement non-comparison operators for if condition")
                 };
 
-                let left = match expr.left.get_type() {
-                    AstNodeType::Identifier => {
+                let left = match expr.left.borrow() {
+                    Expression::Identifier(_) => {
                         let left_label_ptr = counter.get_label();
                         result += &format!("%{left_label_ptr} = alloca i64, align 8 ; copy left for if statement\n");
                         result += &format!("store i64 %0, ptr %{left_label_ptr}, align 8 ; copy left for if statement\n");
@@ -103,9 +97,7 @@ impl IRGen {
                         result += &format!("%{left_label} = load i64, ptr %{left_label_ptr}, align 8 ; copy left for if statement?\n");
                         format!("%{left_label}")
                     },
-                    AstNodeType::Literal => {
-                        let literal = downcast!(Literal, expr);
-
+                    Expression::Literal(literal) => {
                         if let Literal::Number(n) = literal {
                             n
                         } else {
@@ -116,8 +108,8 @@ impl IRGen {
                     _ => todo!("todo: implement complex expreession for operand")
                 };
 
-                let right = match expr.right.get_type() {
-                    AstNodeType::Identifier => {
+                let right = match expr.right.borrow() {
+                    Expression::Identifier(_) => {
                         let right_label_ptr = counter.get_label();
                         result += &format!("%{right_label_ptr} = alloca i64, align 8; copy right for if statement\n");
                         result += &format!("store i64 %0, ptr %{right_label_ptr}, align 8 ; copy right for if statement\n");
@@ -127,9 +119,7 @@ impl IRGen {
 
                         format!("%{right_label}")
                     },
-                    AstNodeType::Literal => {
-                        let literal = downcast!(Literal, expr.right);
-
+                    Expression::Literal(literal) => {
                         if let Literal::Number(n) = literal {
                             n
                         } else {
@@ -145,7 +135,7 @@ impl IRGen {
 
                 cmp_result
             },
-            AstNodeType::PrefixExpression => todo!("todo: implement prefix expression for if condition"),
+            &Expression::Prefix(_) => todo!("todo: implement prefix expression for if condition"),
             _ => panic!("invalid expression for if condition!"),
         };
 
@@ -163,7 +153,7 @@ impl IRGen {
         Ok(result)
     }
 
-    fn generate_expression(expression: &Box<dyn Expression>, counter: &mut LabelCounter) -> Result<(String, usize), IRGenError> {
+    fn generate_expression(expression: &Expression, counter: &mut LabelCounter) -> Result<(String, usize), IRGenError> {
         let mut result: String = String::new();
 
         result += "; code for expression!\n";
@@ -171,18 +161,15 @@ impl IRGen {
         Ok((result, 0))
     }
 
-    fn generate_statement(statement: &Box<dyn Statement>, counter: &mut LabelCounter) -> Result<String, IRGenError> {
+    fn generate_statement(statement: &Statement, counter: &mut LabelCounter) -> Result<String, IRGenError> {
         let mut result: String = String::new();
 
-        match statement.get_type() {
-            AstNodeType::LetStatement => todo!("let statement in fnCall"),
-            AstNodeType::IfStatement => result += &IRGen::generate_if(downcast!(IfStatement, statement), counter).unwrap(),
-            AstNodeType::ReturnStatement => {
-                let stmt = downcast!(ReturnStatement, statement);
+        match statement {
+            Statement::Let(stmt) => todo!("let statement in fnCall"),
+            Statement::If(stmt) => result += &IRGen::generate_if(stmt, counter).unwrap(),
+            Statement::Return(stmt) => {
 
-                if stmt.expression.get_type() == AstNodeType::Literal {
-                    let literal = downcast!(Literal, stmt.expression);
-
+                if let Expression::Literal(literal) = &stmt.expression {
                     if let Literal::Number(n) = literal {
                         result += &format!("ret i64 {}\n", n);
                     } else {
@@ -205,7 +192,7 @@ impl IRGen {
         let mut label_idx: LabelCounter = LabelCounter::new();
 
         let parameters: HashMap<String, usize> = def_statement.parameters.iter().map(|(identifier, _)|
-            (identifier.to_string(), label_idx.get_label())
+            (format!("{:?}", identifier), label_idx.get_label())
         ).collect();
 
         let params_result: Vec<String> = (0..label_idx.count).map(|n| format!("i64 noundef %{n}")).collect();
@@ -213,7 +200,7 @@ impl IRGen {
 
         let return_label = label_idx.get_label();
 
-        result += &format!("define i64 @{}({}) nounwind {{\n", def_statement.name.to_string(), params_result.join(", "));
+        result += &format!("define i64 @{:?}({}) nounwind {{\n", def_statement.name, params_result.join(", "));
         result += &format!("%{} = alloca i64, align 8 ; return value\n", return_label); // for return value
 
         let parameters: HashMap<String, usize> = parameters.into_iter().map(|param| {
@@ -238,8 +225,8 @@ impl IRGen {
         let mut result: String = String::new();
 
         self.ast.statements.retain(|statement| {
-            if statement.get_type() == AstNodeType::DefStatement {
-                result += &IRGen::generate_function(downcast!(DefStatement, statement)).unwrap();
+            if let Statement::Def(stmt) = statement {
+                result += &IRGen::generate_function(stmt).unwrap();
 
                 false
             } else {

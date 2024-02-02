@@ -1,6 +1,5 @@
-use crate::parser::ast::{Expression, AstNodeType};
 use serde::{Deserialize, Serialize};
-use core::any::Any;
+use std::fmt;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub enum Token {
@@ -64,20 +63,12 @@ pub enum Token {
     EOF,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct Identifier(pub String);
 
-impl Expression for Identifier {
-    fn to_string(&self) -> String {
-        format!("{}", self.0)
-    }
-
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::Identifier
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
+impl fmt::Debug for Identifier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -93,22 +84,8 @@ pub enum Keyword {
     Return,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum Literal {
     Number(i64),
     String(String),
-}
-
-impl Expression for Literal {
-    fn to_string(&self) -> String {
-        format!("{:?}", self)
-    }
-
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::Literal
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
 }

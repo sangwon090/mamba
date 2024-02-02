@@ -1,18 +1,19 @@
 use crate::lexer::Identifier;
 use crate::parser::{Parser, PrattParser, Token, Keyword};
-use crate::parser::ast::{Statement, Expression, AstNodeType};
+use crate::parser::ast::Expression;
 use crate::error::ParseError;
 use crate::types::DataType;
+use super::ast::Parsable;
 use super::pratt::Precedence;
-use core::any::Any;
+use std::fmt;
 
 pub struct LetStatement {
     pub identifier: Identifier,
     pub r#type: DataType,
-    pub expression: Box<dyn Expression>,
+    pub expression: Expression,
 }
 
-impl Statement for LetStatement {
+impl Parsable for LetStatement {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {        
         let identifier = if let Some(token) = parser.next(0) {
             parser.pos += 1;
@@ -84,22 +85,16 @@ impl Statement for LetStatement {
         })
 
     }
+}
 
-    fn to_string(&self) -> String {
+impl fmt::Debug for LetStatement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let r#type = match self.r#type {
             DataType::Int => "int",
             DataType::Str => "str",
             DataType::Void => "void",
         };
         
-        format!("{{ type: let, name: {}, dataType: {}, expression: {} }}", self.identifier.0, r#type, self.expression.to_string())
-    }
-
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::LetStatement
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
+        write!(f, "{{ name: {}, dataType: {}, expression: {:?} }}", self.identifier.0, r#type, self.expression)
     }
 }

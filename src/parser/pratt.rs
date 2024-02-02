@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::parser::Parser;
 use crate::parser::Expression;
 use crate::parser::ParseError;
@@ -80,12 +82,12 @@ impl PrattParser {
         })
     }
 
-    pub fn parse_expression(parser: &mut Parser, precedence: Precedence) -> Result<Box<dyn Expression>, ParseError> {
+    pub fn parse_expression(parser: &mut Parser, precedence: Precedence) -> Result<Expression, ParseError> {
         let token = parser.next(0).unwrap();
 
-        let prefix: Option<Box<dyn Expression>> = match token.clone() {
-            Token::Identifier(identifier) => Some(Box::new(identifier)),
-            Token::Literal(literal) => Some(Box::new(literal)),
+        let prefix: Option<Expression> = match token.clone() {
+            Token::Identifier(identifier) => Some(Expression::Identifier(identifier)),
+            Token::Literal(literal) => Some(Expression::Literal(literal)),
             Token::LParen => {
                 parser.pos += 1;
 
@@ -152,7 +154,7 @@ impl PrattParser {
         };
     }
 
-    pub fn parse_nud(parser: &mut Parser) -> Result<Box<dyn Expression>, ParseError> {
+    pub fn parse_nud(parser: &mut Parser) -> Result<Expression, ParseError> {
         let operator = if let Some(token) = parser.next(0) {
             PrattParser::get_operator(&token, true).unwrap()
         } else {
@@ -165,13 +167,13 @@ impl PrattParser {
 
         let prefix_expression = PrefixExpression {
             operator,
-            right,
+            right: Box::new(right),
         };
 
-        Ok(Box::new(prefix_expression))
+        Ok(Expression::Prefix(prefix_expression))
     }
 
-    pub fn parse_led(parser: &mut Parser, left: Box<dyn Expression>) -> Result<Box<dyn Expression>, ParseError> {
+    pub fn parse_led(parser: &mut Parser, left: Expression) -> Result<Expression, ParseError> {
         let operator = if let Some(token) = parser.next(0) {
             PrattParser::get_operator(&token, false).unwrap()
         } else {
@@ -182,7 +184,7 @@ impl PrattParser {
         
         if let Operator::FnCall = operator {
             let fncall_expression = PrattParser::parse_fncall(parser, left).unwrap();
-            return Ok(Box::new(fncall_expression));
+            return Ok(Expression::FnCall(fncall_expression));
         }
 
         parser.pos += 1;
@@ -192,16 +194,16 @@ impl PrattParser {
 
         let infix_expression = InfixExpression {
             operator,
-            left,
-            right,
+            left: Rc::new(left),
+            right: Rc::new(right),
         };
 
-        Ok(Box::new(infix_expression))
+        Ok(Expression::Infix(infix_expression))
     }
 
-    pub fn parse_fncall(parser: &mut Parser, left: Box<dyn Expression>) -> Result<FnCallExpression, ParseError> {
-        let identifier = Identifier(left.to_string());
-        let mut arguments: Vec<Box<dyn Expression>> = Vec::new();
+    pub fn parse_fncall(parser: &mut Parser, left: Expression) -> Result<FnCallExpression, ParseError> {
+        let identifier = Identifier(format!("{:?}", left));
+        let mut arguments: Vec<Expression> = Vec::new();
 
         parser.pos += 1;
 

@@ -1,14 +1,15 @@
 use crate::parser::{Parser, PrattParser, Token};
-use crate::parser::ast::{Statement, Expression, AstNodeType};
+use crate::parser::ast::Expression;
 use crate::error::ParseError;
+use super::ast::Parsable;
 use super::pratt::Precedence;
-use core::any::Any;
+use std::fmt;
 
 pub struct ReturnStatement {
-    pub expression: Box<dyn Expression>,
+    pub expression: Expression,
 }
 
-impl Statement for ReturnStatement {
+impl Parsable for ReturnStatement {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
         let expression = PrattParser::parse_expression(parser, Precedence::Lowest).unwrap();
 
@@ -28,16 +29,10 @@ impl Statement for ReturnStatement {
             expression,
         })
     } 
+}
 
-    fn to_string(&self) -> String {
-        format!("{{ type: return, expression: {} }}", self.expression.to_string())
-    }
-
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::ReturnStatement
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
+impl fmt::Debug for ReturnStatement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{ expression: {:?} }}", self.expression)
     }
 }

@@ -1,8 +1,4 @@
-use parser::ast::{AbstractSyntaxTree, Expression};
 use wasm_bindgen::prelude::*;
-
-use serde::{Serialize, Deserialize};
-use serde_json::{Result, Value};
 
 pub mod irgen;
 pub mod lexer;
@@ -11,7 +7,6 @@ pub mod error;
 pub mod types;
 
 use lexer::Lexer;
-use parser::Parser;
 
 #[wasm_bindgen]
 pub fn lex(string: String) -> String {

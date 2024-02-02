@@ -1,52 +1,46 @@
 use crate::parser::{Parser, PrattParser};
 use crate::error::ParseError;
 use crate::parser::pratt::Precedence;
-use crate::lexer::{Token, Identifier};
-use core::any::Any;
+use crate::lexer::{Identifier, Literal, Token};
+use std::fmt;
+use std::rc::Rc;
+
+use super::{DefStatement, IfStatement, LetStatement, ReturnStatement};
 
 pub struct AbstractSyntaxTree {
-    pub statements: Vec<Box<dyn Statement>>,
+    pub statements: Vec<Statement>,
 }
 
-#[derive(PartialEq, Eq, Debug)]
-pub enum AstNodeType {
-    Identifier,
-    Literal,
-    PrefixExpression,
-    InfixExpression,
-    ExpressionStatement,
-    FnCallExpression,
-    DefStatement,
-    IfStatement,
-    LetStatement,
-    ReturnStatement,
+#[derive(Debug)]
+pub enum AstNode {
+    Statement(Statement),
+    Expression(Expression),
 }
 
-pub trait Statement {
+#[derive(Debug)]
+pub enum Statement {
+    Def(DefStatement),
+    If(IfStatement),
+    Let(LetStatement),
+    Return(ReturnStatement),
+    Expression(ExpressionStatement),
+}
+
+#[derive(Debug)]
+pub enum Expression {
+    Prefix(PrefixExpression),
+    Infix(InfixExpression),
+    FnCall(FnCallExpression),
+    Identifier(Identifier),
+    Literal(Literal),
+}
+
+pub trait Parsable {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> where Self: Sized;
-    fn to_string(&self) -> String;
-    fn get_type(&self) -> AstNodeType;
-    fn as_any(&self) -> &dyn Any;
-}
-
-#[macro_export]
-macro_rules! downcast {
-    ($type:ident, $stmt:expr) => {
-        $stmt.as_any().downcast_ref::<$type>().unwrap()
-    }
-}
-
-pub(crate) use downcast;
-
-pub trait Expression {
-    //fn parse(parser: &mut Parser) -> Result<Self, ParseError> where Self: Sized;
-    fn to_string(&self) -> String;
-    fn get_type(&self) -> AstNodeType;
-    fn as_any(&self) -> &dyn Any;
 }
 
 pub struct ExpressionStatement {
-    expression: Box<dyn Expression>,
+    pub expression: Expression,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -75,44 +69,29 @@ pub enum Operator {
 
 pub struct PrefixExpression {
     pub operator: Operator,
-    pub right: Box<dyn Expression>
+    pub right: Box<Expression>,
 }
 
-impl Expression for PrefixExpression {
-    fn to_string(&self) -> String {
-        format!("{{ operator: {:?}, right: {} }}", self.operator, self.right.to_string())
-    }
 
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::PrefixExpression
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
+impl fmt::Debug for PrefixExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{ operator: {:?}, right: {:?} }}", self.operator, *self.right)
     }
 }
 
 pub struct InfixExpression {
     pub operator: Operator,
-    pub left: Box<dyn Expression>,
-    pub right: Box<dyn Expression>,
+    pub left: Rc<Expression>,
+    pub right: Rc<Expression>,
 }
 
-impl Expression for InfixExpression {
-    fn to_string(&self) -> String {
-        format!("{{ operator: {:?}, left: {}, right: {} }}", self.operator, self.left.to_string(), self.right.to_string())
-    }
-
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::InfixExpression
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
+impl fmt::Debug for InfixExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{ operator: {:?}, left: {:?}, right: {:?} }}", self.operator, *self.left, *self.right)
     }
 }
 
-impl Statement for ExpressionStatement {
+impl Parsable for ExpressionStatement {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
         let expression = if let Some(token) = parser.next(0) {
             PrattParser::parse_expression(parser, Precedence::Lowest).unwrap()
@@ -132,44 +111,31 @@ impl Statement for ExpressionStatement {
             expression,
         })
     }
-
-    fn to_string(&self) -> String {
-        self.expression.to_string()
-    }
-
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::ExpressionStatement
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
 } 
+
+impl fmt::Debug for ExpressionStatement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
+        write!(f, "{:?}", self.expression)
+    }
+}
 
 pub struct FnCallExpression {
     pub identifier: Identifier,
-    pub arguments: Vec<Box<dyn Expression>>,
+    pub arguments: Vec<Expression>,
 }
 
-impl Expression for FnCallExpression {
-    fn to_string(&self) -> String {
-        let mut result = format!("{{ type: fnCall, name: {}, args: {{ ", self.identifier.0);
+impl fmt::Debug for FnCallExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut result = format!("{{ name: {}, args: {{ ", self.identifier.0);
 
         for argument in &self.arguments {
-            result.push_str(&argument.to_string());
+            result.push_str(&format!("{:?}", argument));
             result.push_str(", ");
         }
 
         result.push_str("} }");
-        result
-    }
 
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::FnCallExpression
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
+        write!(f, "{}", result)
     }
 }
 

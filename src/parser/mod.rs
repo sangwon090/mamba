@@ -4,6 +4,8 @@ use crate::parser::pratt::PrattParser;
 pub use crate::parser::{r#if::IfStatement, r#let::LetStatement, r#return::ReturnStatement, def::DefStatement};
 use crate::error::ParseError;
 
+use self::ast::Parsable;
+
 pub mod ast;
 pub mod pratt;
 mod r#if;
@@ -32,27 +34,27 @@ impl Parser {
         }
     }
 
-    pub fn parse_statement(&mut self) -> Result<Option<Box<dyn Statement>>, ParseError> {
+    pub fn parse_statement(&mut self) -> Result<Option<Statement>, ParseError> {
         let token = &self.tokens[self.pos];
 
-        let statement: Option<Box<dyn Statement>> = match token {
+        let statement: Option<Statement> = match token {
             Token::Keyword(keyword) => {
                 match keyword {
                     Keyword::Def => {
                         self.pos += 1;
-                        Some(Box::new(DefStatement::parse(self).unwrap()))
+                        Some(Statement::Def(DefStatement::parse(self).unwrap()))
                     },
                     Keyword::If => {
                         self.pos += 1;
-                        Some(Box::new(IfStatement::parse(self).unwrap()))
+                        Some(Statement::If(IfStatement::parse(self).unwrap()))
                     },
                     Keyword::Let => {
                         self.pos += 1;
-                        Some(Box::new(LetStatement::parse(self).unwrap()))
+                        Some(Statement::Let(LetStatement::parse(self).unwrap()))
                     },
                     Keyword::Return => {
                         self.pos += 1;
-                        Some(Box::new(ReturnStatement::parse(self).unwrap()))
+                        Some(Statement::Return(ReturnStatement::parse(self).unwrap()))
                     },
                     _ => {
                         self.pos += 1;
@@ -63,7 +65,7 @@ impl Parser {
             Token::EOF => {
                 None
             },
-            _ => Some(Box::new(ExpressionStatement::parse(self).unwrap())),
+            _ => Some(Statement::Expression(ExpressionStatement::parse(self).unwrap())),
         };
 
         Ok(statement)

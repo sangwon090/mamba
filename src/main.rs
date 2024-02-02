@@ -2,7 +2,7 @@ use std::io::{self, Write, BufRead};
 use std::fs;
 use std::env;
 use std::process::{Command, Stdio};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use mamba::lexer::Lexer;
 use mamba::parser::Parser;
@@ -46,7 +46,7 @@ fn main() {
         println!("parser: {:?}", parser_start.elapsed());
 
         for statement in &ast.statements {
-            println!("{}", statement.to_string());
+            println!("{:?}", statement);
         }
 
         let mut irgen = IRGen::new(ast);

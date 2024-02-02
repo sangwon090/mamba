@@ -10,16 +10,16 @@ pub enum Operand {
 }
 
 pub enum Condition {
-    eq,
-    ne,
-    ugt,
-    uge,
-    ult,
-    ule,
-    sgt,
-    sge,
-    slt,
-    sle
+    Eq,
+    Ne,
+    Ugt,
+    Uge,
+    Ult,
+    Ule,
+    Sgt,
+    Sge,
+    Slt,
+    Sle
 }
 
 pub enum Value {
@@ -34,16 +34,16 @@ pub struct Register(pub String);
 impl Condition {
     pub fn as_str(&self) -> &'static str {
         match self {
-            Condition::eq => "eq",
-            Condition::ne => "ne",
-            Condition::ugt => "ugt",
-            Condition::uge => "uge",
-            Condition::ult => "ult",
-            Condition::ule => "ule",
-            Condition::sgt => "sgt",
-            Condition::sge => "sge",
-            Condition::slt => "slt",
-            Condition::sle => "sle",
+            Condition::Eq => "eq",
+            Condition::Ne => "ne",
+            Condition::Ugt => "ugt",
+            Condition::Uge => "uge",
+            Condition::Ult => "ult",
+            Condition::Ule => "ule",
+            Condition::Sgt => "sgt",
+            Condition::Sge => "sge",
+            Condition::Slt => "slt",
+            Condition::Sle => "sle",
         }
     }
 }

@@ -1,19 +1,20 @@
 use crate::parser::{Parser, PrattParser, Token, Keyword};
-use crate::parser::ast::{Statement, Expression, AstNodeType};
+use crate::parser::ast::{Statement, Expression};
 use crate::error::ParseError;
-use core::any::Any;
+use std::fmt;
 
+use super::ast::Parsable;
 use super::pratt::Precedence;
 
 pub struct IfStatement {
-    pub condition: Box<dyn Expression>,
-    pub then: Box<dyn Statement>,
-    pub r#else: Option<Box<dyn Statement>>,
+    pub condition: Expression,
+    pub then: Box<Statement>,
+    pub r#else: Option<Box<Statement>>,
 }
 
-impl Statement for IfStatement {
+impl Parsable for IfStatement {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
-        let condition: Box<dyn Expression> = PrattParser::parse_expression(parser, Precedence::Lowest).unwrap();
+        let condition: Expression = PrattParser::parse_expression(parser, Precedence::Lowest).unwrap();
         parser.pos += 1;
 
         if let Some(token) = parser.next(0) {
@@ -88,45 +89,39 @@ impl Statement for IfStatement {
                     
                     Ok(IfStatement {
                         condition,
-                        then,
-                        r#else: Some(r#else),
+                        then: Box::new(then),
+                        r#else: Some(Box::new(r#else)),
                     })
                 } else {
                     Ok(IfStatement {
                         condition,
-                        then,
+                        then: Box::new(then),
                         r#else: None,
                     })
                 }
             } else {
                 Ok(IfStatement {
                     condition,
-                    then,
+                    then: Box::new(then),
                     r#else: None,
                 })
             }
         } else {
             Ok(IfStatement {
                 condition,
-                then,
+                then: Box::new(then),
                 r#else: None,
             }) 
         }
     }
+}
 
-    fn to_string(&self) -> String {
+impl fmt::Debug for IfStatement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(r#else) = &self.r#else {
-            format!("{{ type: if, condition: {}, then: {}, else: {} }}", self.condition.to_string(), self.then.to_string(), r#else.to_string())
+            write!(f, "{{ condition: {:?}, then: {:?}, else: {:?} }}", self.condition, self.then, r#else)
         } else {
-            format!("{{ type: if, condition: {}, then: {} }}", self.condition.to_string(), self.then.to_string())
+            write!(f, "{{ condition: {:?}, then: {:?} }}", self.condition, self.then)
         }
-    }
-
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::IfStatement
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }

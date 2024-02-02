@@ -1,20 +1,18 @@
-use crate::parser::ast::{Expression, AstNodeType, InfixExpression, PrefixExpression, Operator};
-use crate::lexer::{Literal, Identifier};
+use crate::parser::ast::{Expression, Operator};
+use crate::lexer::Literal;
 use std::collections::HashMap;
-use crate::downcast;
 
-pub fn eval_constexpr(expression: &Box<dyn Expression>, vars: &HashMap<String, i64>) -> Option<i64> {
-    match expression.get_type() {
-        AstNodeType::InfixExpression => {
-            let expression = downcast!(InfixExpression, expression);
-            let left = eval_constexpr(&expression.left, &vars);
-            let right = eval_constexpr(&expression.right, &vars);
+pub fn eval_constexpr(expression: &Expression, vars: &HashMap<String, i64>) -> Option<i64> {
+    match expression {
+        Expression::Infix(expr) => {
+            let left: Option<i64> = eval_constexpr(&expr.left, &vars);
+            let right: Option<i64> = eval_constexpr(&expr.right, &vars);
 
             if left.is_some() && right.is_some() {
                 let left = left.unwrap();
                 let right = right.unwrap();
 
-                match expression.operator {
+                match expr.operator {
                     Operator::BitwiseAnd    => Some(left & right),
                     Operator::BitwiseOr     => Some(left | right),
                     Operator::BitwiseXor    => Some(left ^ right),
@@ -37,13 +35,12 @@ pub fn eval_constexpr(expression: &Box<dyn Expression>, vars: &HashMap<String, i
                 None
             }
         },
-        AstNodeType::PrefixExpression => {
-            let expression = downcast!(PrefixExpression, expression);
-            let right = eval_constexpr(&expression.right, &vars);
+        Expression::Prefix(expr) => {
+            let right = eval_constexpr(&expr.right, &vars);
 
             match right {
                 Some(right) => {
-                    match expression.operator {
+                    match expr.operator {
                         Operator::UnaryMinus => Some(-right),
                         Operator::BitwiseNot => Some(!right),
                         _ => None,
@@ -52,23 +49,21 @@ pub fn eval_constexpr(expression: &Box<dyn Expression>, vars: &HashMap<String, i
                 None => None,
             }
         },
-        AstNodeType::Literal => {
-            let literal = downcast!(Literal, expression);
-
+        Expression::FnCall(_) => {
+            None 
+        }
+        Expression::Literal(literal) => {
             match literal {
                 Literal::Number(n) => Some(*n),
                 Literal::String(_) => None,
             }
         },
-        AstNodeType::Identifier => {
-            let identifier = downcast!(Identifier, expression);
-
-            if vars.contains_key(&identifier.0) {
-                Some(vars[&identifier.0])
+        Expression::Identifier(ident) => {
+            if vars.contains_key(&ident.0) {
+                Some(vars[&ident.0])
             } else {
                 None
             }
-        }
-        _ => None,
+        },
     }
 }

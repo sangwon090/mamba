@@ -1,9 +1,7 @@
-use mamba::downcast;
-use mamba::irgen::expression::ExpressionGen;
 use mamba::irgen::instruction::{Instruction, Operand, Value, Register};
 use mamba::irgen::block::Block;
-use mamba::lexer::{Lexer, Literal};
-use mamba::parser::ast::{Expression, ExpressionStatement, InfixExpression, Operator};
+use mamba::lexer::Lexer;
+use mamba::parser::ast::Statement;
 use mamba::parser::Parser;
 
 #[test]
@@ -61,11 +59,7 @@ fn test_expr_gen() {
     let mut parser = Parser::new(tokens);
     let ast = parser.parse_all();
 
-    let expr_stmt = downcast!(ExpressionStatement, ast.statements[0]);
-    println!("{:?}", expr_stmt.expression.get_type());
-
-    let code = ExpressionGen::generate_code(&expr_stmt.expression);
-
-
-    println!("{}", code);
+    if let Statement::Expression(stmt) = &ast.statements[0] {
+        println!("{:?}", stmt);
+    }
 }
