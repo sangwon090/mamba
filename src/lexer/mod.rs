@@ -156,7 +156,10 @@ impl Lexer {
                     },
                     '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => tokens.push(Token::Literal(Literal::Number(self.read_number()))),
                     '"' => {
-                        tokens.push(Token::Literal(Literal::String(self.read_string().unwrap())));
+                        match self.read_string() {
+                            Ok(str) => tokens.push(Token::Literal(Literal::String(str))),
+                            Err(error) => return Err(error),
+                        }
                         self.pos += 1;
                     },
                     '(' => {
