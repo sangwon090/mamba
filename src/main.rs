@@ -50,25 +50,25 @@ fn main() {
         
         println!("===== Generated IR =====\n{}", ir);
 
-        let mut ir_file = File::create("./launcher/mamba.ll").unwrap();
+        let mut ir_file = File::create("./out/mamba.ll").unwrap();
         
         println!("Writing IR to the file...");
         write!(ir_file, "{}", ir).unwrap();
 
         println!("Invoking llc...");
         Command::new("llc")
-            .args(["-filetype=obj", "./launcher/mamba.ll", "-o", "./launcher/mamba.o"])
+            .args(["-filetype=obj", "./out/mamba.ll", "-o", "./out/mamba.o"])
             .spawn()
             .unwrap();
 
-        println!("Invoking gcc...");
-        Command::new("gcc")
-            .args(["./launcher/main.c", "./launcher/mamba.o", "-o", "./launcher/launcher"])
+        println!("Invoking ld...");
+        Command::new("ld")
+            .args(["./out/mamba.o", "-e", "_start", "-lc", "-o", "./out/mamba"])
             .spawn()
             .unwrap();
 
         println!("Invoking launcher...\n");
-        let output = Command::new("./launcher/launcher")
+        let output = Command::new("./out/mamba")
             .output()
             .unwrap();
 

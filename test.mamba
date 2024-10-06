@@ -12,5 +12,5 @@ def fibo(n: int) -> int:
         else:
             return fibo(n - 2) + fibo(n - 1);
 
-def mamba_main() -> int:
-    return 30010;
+def main() -> int:
+    return fibo(10);

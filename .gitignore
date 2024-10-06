@@ -1,6 +1,4 @@
+/out
 /target
 
 test*
-launcher/launcher
-launcher/*.ll
-launcher/*.o

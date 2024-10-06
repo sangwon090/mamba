@@ -56,6 +56,7 @@ impl IRGen {
         let mut result: String = String::new();
         let mut scoped_ctx = ScopedContext::new();
 
+        result += &include_str!("stub.ll");
         result += &self.ast.statements.iter()
             .map(|stmt| IRGen::generate_statement(&mut self.context, &mut scoped_ctx, &stmt).unwrap())
             .collect::<Vec<String>>()
