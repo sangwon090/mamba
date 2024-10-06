@@ -1,10 +1,11 @@
 use std::io::{self, Write, BufRead};
-use std::fs;
+use std::fs::{self, File};
 use std::env;
+use std::process::Command;
 
 use mamba::lexer::Lexer;
 use mamba::parser::Parser;
-use mamba::irgen::IRGen;
+use mamba::codegen::llvm::IRGen;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -48,5 +49,29 @@ fn main() {
         let ir = irgen.generate_ir().unwrap();
         
         println!("===== Generated IR =====\n{}", ir);
+
+        let mut ir_file = File::create("./launcher/mamba.ll").unwrap();
+        
+        println!("Writing IR to the file...");
+        write!(ir_file, "{}", ir).unwrap();
+
+        println!("Invoking llc...");
+        Command::new("llc")
+            .args(["-filetype=obj", "./launcher/mamba.ll", "-o", "./launcher/mamba.o"])
+            .spawn()
+            .unwrap();
+
+        println!("Invoking gcc...");
+        Command::new("gcc")
+            .args(["./launcher/main.c", "./launcher/mamba.o", "-o", "./launcher/launcher"])
+            .spawn()
+            .unwrap();
+
+        println!("Invoking launcher...\n");
+        let output = Command::new("./launcher/launcher")
+            .output()
+            .unwrap();
+
+        println!("{}", String::from_utf8(output.stdout).unwrap());
     }
 }

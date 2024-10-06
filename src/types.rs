@@ -4,3 +4,12 @@ pub enum DataType {
     Str,
     Void,
 }
+
+impl DataType {
+    pub fn to_mnemonic(self) -> &'static str {
+        match self {
+            DataType::Int => "i64",
+            _ => "void",
+        }
+    }
+}

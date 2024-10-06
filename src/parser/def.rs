@@ -43,6 +43,9 @@ impl Statement for DefStatement {
                 if let Token::Identifier(identifier) = token {
                     parser.pos += 1;
                     identifier
+                } else if let Token::RParen = token {
+                    parser.pos += 1;
+                    break;
                 } else {
                     return Err(ParseError(format!("[DefStatement] expected identifier, found {token:?}")));
                 }

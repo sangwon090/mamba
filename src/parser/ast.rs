@@ -64,6 +64,20 @@ pub enum Operator {
     FnCall,
 }
 
+impl Operator {
+    pub fn to_mnemonic(self) -> &'static str {
+        match self {
+            Operator::Equal => "eq",
+            Operator::NotEqual => "ne",
+            Operator::Greater => "sgt",
+            Operator::GreaterEqual => "sge",
+            Operator::Less => "slt",
+            Operator::LessEqual => "sle",
+            _ => "",
+        }
+    }
+}
+
 pub struct PrefixExpression {
     pub operator: Operator,
     pub right: Box<dyn Expression>
