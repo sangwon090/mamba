@@ -38,14 +38,7 @@ impl Statement for LetStatement {
             parser.pos += 1;
 
             if let Token::Keyword(keyword) = token {
-                match keyword {
-                    Keyword::Int => DataType::Int,
-                    Keyword::Str => DataType::Str,
-                    Keyword::Void => DataType::Void,
-                    _ => {
-                        return Err(ParseError(format!("[LetStatement] expected type, found {keyword:?}")))
-                    },
-                }
+                keyword.into()
             } else {
                 return Err(ParseError(format!("[LetStatement] expected keyword, found {token:?}")));
             }
@@ -85,14 +78,8 @@ impl Statement for LetStatement {
 
     }
 
-    fn to_string(&self) -> String {
-        let r#type = match self.r#type {
-            DataType::Int => "int",
-            DataType::Str => "str",
-            DataType::Void => "void",
-        };
-        
-        format!("{{ type: let, name: {}, dataType: {}, expression: {} }}", self.identifier.0, r#type, self.expression.to_string())
+    fn to_string(&self) -> String {   
+        format!("{{ type: let, name: {}, dataType: {}, expression: {} }}", &self.identifier.0, &self.r#type.to_mnemonic(), self.expression.to_string())
     }
 
     fn get_type(&self) -> AstNodeType {

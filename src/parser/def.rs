@@ -67,14 +67,7 @@ impl Statement for DefStatement {
                 parser.pos += 1;
     
                 if let Token::Keyword(keyword) = token {
-                    match keyword {
-                        Keyword::Int => DataType::Int,
-                        Keyword::Str => DataType::Str,
-                        Keyword::Void => DataType::Void,
-                        _ => {
-                            return Err(ParseError(format!("[DefStatement] expected type, found {keyword:?}")))
-                        },
-                    }
+                    keyword.into()
                 } else {
                     return Err(ParseError(format!("[DefStatement] expected keyword, found {token:?}")));
                 }
@@ -117,13 +110,7 @@ impl Statement for DefStatement {
             parser.pos += 1;
 
             if let Token::Keyword(keyword) = token {
-                match keyword {
-                    Keyword::Int => DataType::Int,
-                    Keyword::Str => DataType::Str,
-                    _ => {
-                        return Err(ParseError(format!("[DefStatement] expected type, found {keyword:?}")))
-                    },
-                }
+                keyword.into()
             } else {
                 return Err(ParseError(format!("[DefStatement] expected keyword, found {token:?}")));
             }
@@ -178,13 +165,7 @@ impl Statement for DefStatement {
     }
 
     fn to_string(&self) -> String {
-        let r#type = match self.r#type {
-            DataType::Int => "int",
-            DataType::Str => "str",
-            DataType::Void => "void",
-        };
-
-        let mut result = format!("{{ type: fnDef, name: {}, returnType: {}, args: {:?}, statements: {{ ", self.name.0, r#type, self.parameters);
+        let mut result = format!("{{ type: fnDef, name: {}, returnType: {}, args: {:?}, statements: {{ ", &self.name.0, &self.r#type.to_mnemonic(), self.parameters);
         for statement in &self.statements {
             result.push_str(&statement.to_string())
         }
