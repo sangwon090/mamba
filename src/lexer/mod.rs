@@ -30,7 +30,7 @@ impl Lexer {
         }
     }
 
-    fn read_ident(ident: &str) -> Token {
+    fn read_keyword(ident: &str) -> Token {
         match ident {
             "if" => Token::Keyword(Keyword::If),
             "else" => Token::Keyword(Keyword::Else),
@@ -99,7 +99,7 @@ impl Lexer {
         Ok(result)
     }
 
-    fn read_identifier(&mut self) -> String {
+    fn read_ident(&mut self) -> String {
         let mut result = String::new();
 
         result.push(self.source[self.line][self.pos]);
@@ -380,7 +380,7 @@ impl Lexer {
                         }
                     },
                     _ => {
-                        tokens.push(Lexer::read_ident(&self.read_identifier()));
+                        tokens.push(Lexer::read_keyword(&self.read_ident()));
                         self.pos += 1;
                     },
                 }

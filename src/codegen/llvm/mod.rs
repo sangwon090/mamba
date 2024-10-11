@@ -3,14 +3,14 @@ pub mod expr;
 use std::collections::{HashMap};
 
 use crate::parser::{DefStatement, IfStatement, LetStatement, ReturnStatement};
-use crate::parser::ast::{AbstractSyntaxTree, AstNodeType, Expression, ExpressionStatement, FnCallExpression, InfixExpression, Operator, Statement};
+use crate::parser::ast::{AST, AstNodeType, Expression, ExpressionStatement, FnCallExpression, InfixExpression, Operator, Statement};
 use crate::{error::IRGenError};
 use crate::lexer::{Identifier, Literal};
 
 pub use expr::generate_expr;
 
 pub struct IRGen {
-    ast: AbstractSyntaxTree,
+    ast: AST,
     context: GlobalContext,
 }
 
@@ -49,7 +49,7 @@ impl ScopedContext {
 }
 
 impl IRGen {
-    pub fn new(ast: AbstractSyntaxTree) -> IRGen {
+    pub fn new(ast: AST) -> IRGen {
         IRGen {
             ast,
             context: GlobalContext::new(),
@@ -61,15 +61,15 @@ impl IRGen {
         let mut scoped_ctx = ScopedContext::new();
 
         result += &include_str!("stub.ll");
-        result += &self.ast.statements.iter()
-            .map(|stmt| IRGen::generate_statement(&mut self.context, &mut scoped_ctx, &stmt).unwrap())
+        result += &self.ast.stmts.iter()
+            .map(|stmt| IRGen::generate_stmt(&mut self.context, &mut scoped_ctx, &stmt).unwrap())
             .collect::<Vec<String>>()
             .join("");
 
         Ok(result)
     }
 
-    fn generate_statement(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &Box<dyn Statement>) -> Result<String, IRGenError> {
+    fn generate_stmt(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &Box<dyn Statement>) -> Result<String, IRGenError> {
         let mut result = String::new();
 
         match stmt.get_type() {
@@ -87,16 +87,16 @@ impl IRGen {
     fn generate_global_variable(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &LetStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
         
-        if stmt.expression.get_type() == AstNodeType::Literal {
-            let literal = stmt.expression.as_any().downcast_ref::<Literal>().unwrap();
+        if stmt.expr.get_type() == AstNodeType::Literal {
+            let literal = stmt.expr.as_any().downcast_ref::<Literal>().unwrap();
             if let Literal::Number(n) = literal {
-                global_ctx.global_var.insert(stmt.identifier.0.clone(), *n);
-                result += &format!("@{} = global i64 {}\n", stmt.identifier.0.clone(), *n);
+                global_ctx.global_var.insert(stmt.ident.0.clone(), *n);
+                result += &format!("@{} = global i64 {}\n", stmt.ident.0.clone(), *n);
             } else {
                 eprintln!("cannot generate code for `{:?}`.", literal);
             }
         } else {
-            eprintln!("`{:?}` in let expression is not implemented.", stmt.expression.get_type());
+            eprintln!("`{:?}` in let expression is not implemented.", stmt.expr.get_type());
         }
 
         Ok(result)
@@ -107,7 +107,7 @@ impl IRGen {
 
         result += &format!("define i64 @{}(", stmt.name.to_string());
         
-        result += &stmt.parameters.iter()
+        result += &stmt.params.iter()
         .map(|(ident, dtype)| {
                 scoped_ctx.local_var.insert(ident.to_string(), 0);
                 format!("{} %{}", dtype.clone().to_mnemonic(), ident.to_string())
@@ -117,11 +117,11 @@ impl IRGen {
 
         result += ") {\n";
 
-        global_ctx.fn_decl.insert(stmt.name.to_string(), stmt.parameters.iter().map(|(_, dtype)| dtype.clone().to_mnemonic().into()).collect::<Vec<String>>());
+        global_ctx.fn_decl.insert(stmt.name.to_string(), stmt.params.iter().map(|(_, dtype)| dtype.clone().to_mnemonic().into()).collect::<Vec<String>>());
 
         // add statements
-        result += &stmt.statements.iter()
-            .map(|stmt| IRGen::generate_statement(global_ctx, scoped_ctx, stmt).unwrap())
+        result += &stmt.stmts.iter()
+            .map(|stmt| IRGen::generate_stmt(global_ctx, scoped_ctx, stmt).unwrap())
             .collect::<Vec<String>>()
             .join("\n");
 
@@ -144,12 +144,12 @@ impl IRGen {
         
         // process then
         result += &format!("l{}:\n", then_idx);
-        result += &IRGen::generate_statement(global_ctx, scoped_ctx, &stmt.then).unwrap();
+        result += &IRGen::generate_stmt(global_ctx, scoped_ctx, &stmt.then).unwrap();
 
         // process else
         if let Some(stmt) = &stmt.r#else {
             result += &format!("l{}:\n", else_idx);
-            result += &IRGen::generate_statement(global_ctx, scoped_ctx, &stmt).unwrap();
+            result += &IRGen::generate_stmt(global_ctx, scoped_ctx, &stmt).unwrap();
     
         }
         
@@ -163,7 +163,7 @@ impl IRGen {
     fn generate_ret(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &ReturnStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
-        let (expr_code, expr_idx) = generate_expr(global_ctx, scoped_ctx, &stmt.expression).unwrap();
+        let (expr_code, expr_idx) = generate_expr(global_ctx, scoped_ctx, &stmt.expr).unwrap();
         
         if expr_idx == "" {
             result += &expr_code;

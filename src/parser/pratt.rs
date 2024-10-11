@@ -80,57 +80,57 @@ impl PrattParser {
         })
     }
 
-    pub fn parse_expression(parser: &mut Parser, precedence: Precedence) -> Result<Box<dyn Expression>, ParseError> {
+    pub fn parse_expr(parser: &mut Parser, precedence: Precedence) -> Result<Box<dyn Expression>, ParseError> {
         let token = parser.next(0).unwrap();
 
         let prefix: Option<Box<dyn Expression>> = match token.clone() {
-            Token::Identifier(identifier) => Some(Box::new(identifier)),
+            Token::Identifier(ident) => Some(Box::new(ident)),
             Token::Literal(literal) => Some(Box::new(literal)),
             Token::LParen => {
                 parser.pos += 1;
 
-                let expression = PrattParser::parse_expression(parser, Precedence::Lowest);
+                let expr = PrattParser::parse_expr(parser, Precedence::Lowest);
 
                 if let Some(token) = parser.next(1) {
                     if token == Token::RParen {
                         parser.pos += 1;
-                        Some(expression.unwrap())
+                        Some(expr.unwrap())
                     } else {
-                        return Err(ParseError("[PrattParser::parse_expression] RParen not found".into()));
+                        return Err(ParseError("[PrattParser::parse_expr] RParen not found".into()));
                     }
                 } else {
-                    return Err(ParseError("[PrattParser::parse_expression] insufficient tokens".into()));
+                    return Err(ParseError("[PrattParser::parse_expr] insufficient tokens".into()));
                 }
             }
             Token::Plus | Token::Minus | Token::Tilde => Some(PrattParser::parse_nud(parser).unwrap()),
             _ => None
         };
 
-        let mut expression = prefix.unwrap();
+        let mut expr = prefix.unwrap();
 
         loop {
             let token = if let Some(token) = parser.next(1) {
                 if let Token::EOF = token {
-                    return Ok(expression);
+                    return Ok(expr);
                 } else {
                     token
                 }
             } else {
-                return Ok(expression);
+                return Ok(expr);
             };
 
             let operator = if let Some(token) = parser.next(1) {
                 if let Some(operator) = PrattParser::get_operator(&token, false) {
                     operator
                 } else {
-                    return Ok(expression);
+                    return Ok(expr);
                 }
             } else {
-                return Err(ParseError("[PrattParser::parse_expression] insufficient tokens".into()));
+                return Err(ParseError("[PrattParser::parse_expr] insufficient tokens".into()));
             };
 
             if precedence >= PrattParser::get_precedence(&operator).unwrap() {
-                return Ok(expression);
+                return Ok(expr);
             }
 
             parser.pos += 1;
@@ -140,12 +140,12 @@ impl PrattParser {
                 Token::Star | Token::EqualEqual | Token::NotEqual |
                 Token::Less | Token::LessEqual | Token::Greater | 
                 Token::GreaterEqual | Token::Percent | Token::Ampersand |
-                Token::Circumflex | Token::VBar | Token::LParen => expression = PrattParser::parse_led(parser, expression).unwrap(),
+                Token::Circumflex | Token::VBar | Token::LParen => expr = PrattParser::parse_led(parser, expr).unwrap(),
                 Token::EOF => {
-                    return Ok(expression);
+                    return Ok(expr);
                 }
                 _ => {
-                    return Ok(expression)
+                    return Ok(expr);
                 },
             }
 
@@ -161,14 +161,14 @@ impl PrattParser {
 
         parser.pos += 1;
 
-        let right = PrattParser::parse_expression(parser, Precedence::Unary).unwrap();
+        let right = PrattParser::parse_expr(parser, Precedence::Unary).unwrap();
 
-        let prefix_expression = PrefixExpression {
+        let prefix_expr = PrefixExpression {
             operator,
             right,
         };
 
-        Ok(Box::new(prefix_expression))
+        Ok(Box::new(prefix_expr))
     }
 
     pub fn parse_led(parser: &mut Parser, left: Box<dyn Expression>) -> Result<Box<dyn Expression>, ParseError> {
@@ -181,27 +181,27 @@ impl PrattParser {
         let precedence = PrattParser::get_precedence(&operator).unwrap();
         
         if let Operator::FnCall = operator {
-            let fncall_expression = PrattParser::parse_fncall(parser, left).unwrap();
-            return Ok(Box::new(fncall_expression));
+            let fncall_expr = PrattParser::parse_fncall(parser, left).unwrap();
+            return Ok(Box::new(fncall_expr));
         }
 
         parser.pos += 1;
 
 
-        let right = PrattParser::parse_expression(parser, precedence).unwrap();
+        let right = PrattParser::parse_expr(parser, precedence).unwrap();
 
-        let infix_expression = InfixExpression {
+        let infix_expr = InfixExpression {
             operator,
             left,
             right,
         };
 
-        Ok(Box::new(infix_expression))
+        Ok(Box::new(infix_expr))
     }
 
     pub fn parse_fncall(parser: &mut Parser, left: Box<dyn Expression>) -> Result<FnCallExpression, ParseError> {
-        let identifier = Identifier(left.to_string());
-        let mut arguments: Vec<Box<dyn Expression>> = Vec::new();
+        let ident = Identifier(left.to_string());
+        let mut args: Vec<Box<dyn Expression>> = Vec::new();
 
         parser.pos += 1;
 
@@ -209,8 +209,8 @@ impl PrattParser {
             if let Token::RParen = token {
                 parser.pos += 1;
                 return Ok(FnCallExpression {
-                    identifier,
-                    arguments,
+                    ident,
+                    args,
                 })
             }
         } else {
@@ -218,8 +218,8 @@ impl PrattParser {
         }
 
         loop {
-            let argument = PrattParser::parse_expression(parser, Precedence::Lowest).unwrap();
-            arguments.push(argument);
+            let arg = PrattParser::parse_expr(parser, Precedence::Lowest).unwrap();
+            args.push(arg);
 
 
             parser.pos += 1;
@@ -243,8 +243,8 @@ impl PrattParser {
         }
 
         Ok(FnCallExpression {
-            identifier,
-            arguments,
+            ident,
+            args,
         })
     }
 }

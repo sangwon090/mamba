@@ -5,12 +5,12 @@ use super::pratt::Precedence;
 use core::any::Any;
 
 pub struct ReturnStatement {
-    pub expression: Box<dyn Expression>,
+    pub expr: Box<dyn Expression>,
 }
 
 impl Statement for ReturnStatement {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
-        let expression = PrattParser::parse_expression(parser, Precedence::Lowest).unwrap();
+        let expr = PrattParser::parse_expr(parser, Precedence::Lowest).unwrap();
 
         parser.pos += 1;
 
@@ -25,12 +25,12 @@ impl Statement for ReturnStatement {
         }
 
         Ok(ReturnStatement {
-            expression,
+            expr,
         })
     } 
 
     fn to_string(&self) -> String {
-        format!("{{ type: return, expression: {} }}", self.expression.to_string())
+        format!("{{ type: return, expr: {} }}", self.expr.to_string())
     }
 
     fn get_type(&self) -> AstNodeType {

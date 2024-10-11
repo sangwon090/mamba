@@ -1,5 +1,5 @@
 use crate::lexer::{Token, Keyword};
-use crate::parser::ast::{AbstractSyntaxTree, Statement, Expression, ExpressionStatement};
+use crate::parser::ast::{AST, Statement, Expression, ExpressionStatement};
 use crate::parser::pratt::PrattParser;
 pub use crate::parser::{r#if::IfStatement, r#let::LetStatement, r#return::ReturnStatement, def::DefStatement};
 use crate::error::ParseError;
@@ -11,7 +11,7 @@ mod r#let;
 mod r#return;
 mod def;
 
-pub struct  Parser {
+pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
 }
@@ -32,10 +32,10 @@ impl Parser {
         }
     }
 
-    pub fn parse_statement(&mut self) -> Result<Option<Box<dyn Statement>>, ParseError> {
+    pub fn parse_stmt(&mut self) -> Result<Option<Box<dyn Statement>>, ParseError> {
         let token = &self.tokens[self.pos];
 
-        let statement: Option<Box<dyn Statement>> = match token {
+        let stmt: Option<Box<dyn Statement>> = match token {
             Token::Keyword(keyword) => {
                 match keyword {
                     Keyword::Def => {
@@ -56,7 +56,7 @@ impl Parser {
                     },
                     _ => {
                         self.pos += 1;
-                        return Err(ParseError(format!("[Parser::parse_statement] unexpected keyword {:?}", keyword)));
+                        return Err(ParseError(format!("[Parser::parse_stmt] unexpected keyword {:?}", keyword)));
                     },
                 }
             },
@@ -66,17 +66,17 @@ impl Parser {
             _ => Some(Box::new(ExpressionStatement::parse(self).unwrap())),
         };
 
-        Ok(statement)
+        Ok(stmt)
     }
 
-    pub fn parse_all(&mut self) -> AbstractSyntaxTree {
-        let mut ast = AbstractSyntaxTree::new();
+    pub fn parse_all(&mut self) -> AST {
+        let mut ast = AST::new();
 
         loop {
-            let statement = self.parse_statement().unwrap();
+            let stmt = self.parse_stmt ().unwrap();
 
-            if let Some(statement) = statement {
-                ast.statements.push(statement);
+            if let Some(stmt) = stmt {
+                ast.stmts.push(stmt);
             } else {
                 break;
             }

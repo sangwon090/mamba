@@ -40,8 +40,8 @@ fn main() {
         let mut parser = Parser::new(tokens);
         let ast = parser.parse_all();
         
-        for statement in &ast.statements {
-            eprintln!("{}", statement.to_string());
+        for stmt in &ast.stmts {
+            eprintln!("{}", stmt.to_string());
         }
 
         let mut irgen = IRGen::new(ast);

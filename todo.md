@@ -1,7 +1,7 @@
 # TODO
 
 - [ ] Extensive Refactoring
-    - [ ] Shorten names.
+    - [x] Shorten names.
     - [ ] Use enum instead of using trait+downcast_ref.
     - [ ] Minimize the dependency between lexer, parser and irgen.
     - [ ] Try to eliminate the duplicated codes between lexer, parser and irgen.

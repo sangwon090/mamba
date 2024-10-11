@@ -4,8 +4,8 @@ use crate::parser::pratt::Precedence;
 use crate::lexer::{Token, Identifier};
 use core::any::Any;
 
-pub struct AbstractSyntaxTree {
-    pub statements: Vec<Box<dyn Statement>>,
+pub struct AST {
+    pub stmts: Vec<Box<dyn Statement>>,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -37,7 +37,7 @@ pub trait Expression {
 }
 
 pub struct ExpressionStatement {
-    expression: Box<dyn Expression>,
+    expr: Box<dyn Expression>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -119,8 +119,8 @@ impl Expression for InfixExpression {
 
 impl Statement for ExpressionStatement {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
-        let expression = if let Some(token) = parser.next(0) {
-            PrattParser::parse_expression(parser, Precedence::Lowest).unwrap()
+        let expr = if let Some(token) = parser.next(0) {
+            PrattParser::parse_expr(parser, Precedence::Lowest).unwrap()
         } else {
             return Err(ParseError("[ExpressionStatement] insufficient tokens".into()));
         };
@@ -134,12 +134,12 @@ impl Statement for ExpressionStatement {
         }
 
         Ok(ExpressionStatement {
-            expression,
+            expr,
         })
     }
 
     fn to_string(&self) -> String {
-        self.expression.to_string()
+        self.expr.to_string()
     }
 
     fn get_type(&self) -> AstNodeType {
@@ -152,16 +152,16 @@ impl Statement for ExpressionStatement {
 } 
 
 pub struct FnCallExpression {
-    pub identifier: Identifier,
-    pub arguments: Vec<Box<dyn Expression>>,
+    pub ident: Identifier,
+    pub args: Vec<Box<dyn Expression>>,
 }
 
 impl Expression for FnCallExpression {
     fn to_string(&self) -> String {
-        let mut result = format!("{{ type: fnCall, name: {}, args: {{ ", self.identifier.0);
+        let mut result = format!("{{ type: fnCall, name: {}, args: {{ ", self.ident.0);
 
-        for argument in &self.arguments {
-            result.push_str(&argument.to_string());
+        for arg in &self.args {
+            result.push_str(&arg.to_string());
             result.push_str(", ");
         }
 
@@ -178,10 +178,10 @@ impl Expression for FnCallExpression {
     }
 }
 
-impl AbstractSyntaxTree {
-    pub fn new() -> AbstractSyntaxTree {
-        AbstractSyntaxTree {
-            statements: Vec::new(),
+impl AST {
+    pub fn new() -> AST {
+        AST {
+            stmts: Vec::new(),
         }
     }
 }

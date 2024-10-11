@@ -74,18 +74,18 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
         AstNodeType::FnCallExpression => {
             let expr = expr.as_any().downcast_ref::<FnCallExpression>().unwrap();
 
-            if !global_ctx.fn_decl.contains_key(&expr.identifier.to_string()) {
-                panic!("Unable to find function `{}`", &expr.identifier.to_string());
+            if !global_ctx.fn_decl.contains_key(&expr.ident.to_string()) {
+                panic!("Unable to find function `{}`", &expr.ident.to_string());
             }
             
-            let params = expr.arguments.iter().map(|expr| {
+            let params = expr.args.iter().map(|expr| {
                 let (code, idx) = generate_expr(global_ctx, scoped_ctx, &expr).unwrap();
                 result += &code;
                 format!("i64 %{}", idx)
             }).collect::<Vec<String>>();
 
             let idx = global_ctx.get_label();
-            result += &format!("%{} = call i64 @{}(", idx, &expr.identifier.to_string());
+            result += &format!("%{} = call i64 @{}(", idx, &expr.ident.to_string());
             result += &params.join(", ");
             result += ")\n";
 

@@ -7,20 +7,20 @@ use core::any::Any;
 
 pub struct DefStatement {
     pub name: Identifier,
-    pub parameters: Vec<(Identifier, DataType)>,
+    pub params: Vec<(Identifier, DataType)>,
     pub r#type: DataType,
-    pub statements: Vec<Box<dyn Statement>>,
+    pub stmts: Vec<Box<dyn Statement>>,
 }
 
 impl Statement for DefStatement {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
-        let mut parameters: Vec<(Identifier, DataType)> = Vec::new();
-        let mut statements: Vec<Box<dyn Statement>> = Vec::new();
+        let mut params: Vec<(Identifier, DataType)> = Vec::new();
+        let mut stmts: Vec<Box<dyn Statement>> = Vec::new();
 
         let name = if let Some(token) = parser.next(0) {
-            if let Token::Identifier(identifier) = token {
+            if let Token::Identifier(ident) = token {
                 parser.pos += 1;
-                identifier
+                ident
             } else {
                 return Err(ParseError(format!("[DefStatement] expected identifier, found {token:?}")));
             }
@@ -39,10 +39,10 @@ impl Statement for DefStatement {
         }
 
         loop {
-            let identifier = if let Some(token) = parser.next(0) {
-                if let Token::Identifier(identifier) = token {
+            let ident = if let Some(token) = parser.next(0) {
+                if let Token::Identifier(ident) = token {
                     parser.pos += 1;
-                    identifier
+                    ident
                 } else if let Token::RParen = token {
                     parser.pos += 1;
                     break;
@@ -75,7 +75,7 @@ impl Statement for DefStatement {
                 return Err(ParseError("[DefStatement] insufficient tokens".into()));
             };
 
-            parameters.push((identifier, r#type));
+            params.push((ident, r#type));
 
             if let Some(token) = parser.next(0) {
                 match token {
@@ -148,9 +148,9 @@ impl Statement for DefStatement {
                 return Err(ParseError("[DefStatement] insufficient tokens".into()));
             }
 
-            let statement = parser.parse_statement().unwrap();
-            if let Some(statement) = statement {
-                statements.push(statement);
+            let stmt = parser.parse_stmt().unwrap();
+            if let Some(stmt) = stmt {
+                stmts.push(stmt);
             } else {
                 break;
             }
@@ -158,16 +158,16 @@ impl Statement for DefStatement {
 
         Ok(DefStatement {
             name,
-            parameters,
+            params,
             r#type,
-            statements,
+            stmts,
         })
     }
 
     fn to_string(&self) -> String {
-        let mut result = format!("{{ type: fnDef, name: {}, returnType: {}, args: {:?}, statements: {{ ", &self.name.0, &self.r#type.to_mnemonic(), self.parameters);
-        for statement in &self.statements {
-            result.push_str(&statement.to_string())
+        let mut result = format!("{{ type: fnDef, name: {}, returnType: {}, args: {:?}, stmts: {{ ", &self.name.0, &self.r#type.to_mnemonic(), self.params);
+        for stmt in &self.stmts {
+            result.push_str(&stmt.to_string())
         }
 
         result.push_str(" }");

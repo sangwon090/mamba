@@ -13,7 +13,7 @@ pub struct IfStatement {
 
 impl Statement for IfStatement {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
-        let condition = PrattParser::parse_expression(parser, Precedence::Lowest).unwrap();
+        let condition = PrattParser::parse_expr(parser, Precedence::Lowest).unwrap();
         parser.pos += 1;
 
         if let Some(token) = parser.next(0) {
@@ -36,7 +36,7 @@ impl Statement for IfStatement {
             return Err(ParseError("[IfStatement] insufficient tokens".into()));
         }
 
-        let then = parser.parse_statement().unwrap().unwrap();
+        let then = parser.parse_stmt().unwrap().unwrap();
 
         if let Some(token) = parser.next(0) {
             if let Token::Dedent = token {
@@ -74,7 +74,7 @@ impl Statement for IfStatement {
                     }
                     
             
-                    let r#else = parser.parse_statement().unwrap().unwrap();
+                    let r#else = parser.parse_stmt().unwrap().unwrap();
             
                     if let Some(token) = parser.next(0) {
                         if let Token::Dedent = token {
