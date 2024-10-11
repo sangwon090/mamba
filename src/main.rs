@@ -39,39 +39,39 @@ fn main() {
 
         let mut parser = Parser::new(tokens);
         let ast = parser.parse_all();
-
         
         for statement in &ast.statements {
-            println!("{}", statement.to_string());
+            eprintln!("{}", statement.to_string());
         }
 
         let mut irgen = IRGen::new(ast);
         let ir = irgen.generate_ir().unwrap();
         
-        println!("===== Generated IR =====\n{}", ir);
+        eprintln!("===== Generated IR =====");
+        println!("{ir}");
 
         let mut ir_file = File::create("./out/mamba.ll").unwrap();
         
-        println!("Writing IR to the file...");
+        eprintln!("Writing IR to the file...");
         write!(ir_file, "{}", ir).unwrap();
 
-        println!("Invoking llc...");
+        eprintln!("Invoking llc...");
         Command::new("llc")
             .args(["-filetype=obj", "./out/mamba.ll", "-o", "./out/mamba.o"])
             .spawn()
             .unwrap();
 
-        println!("Invoking ld...");
+        eprintln!("Invoking ld...");
         Command::new("ld")
             .args(["./out/mamba.o", "-e", "_start", "-lc", "-o", "./out/mamba"])
             .spawn()
             .unwrap();
 
-        println!("Invoking launcher...\n");
+        eprintln!("Invoking launcher...\n");
         let output = Command::new("./out/mamba")
             .output()
             .unwrap();
 
-        println!("{}", String::from_utf8(output.stdout).unwrap());
+        eprintln!("{}", String::from_utf8(output.stdout).unwrap());
     }
 }

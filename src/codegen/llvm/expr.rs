@@ -98,7 +98,7 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
             literal_idx.to_string()
         },
         _ => {
-            println!("WHAT??? {:?}\n", expr.get_type());
+            eprintln!("WHAT??? {:?}\n", expr.get_type());
             "".into()
         },
     };

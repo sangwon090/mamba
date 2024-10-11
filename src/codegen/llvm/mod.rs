@@ -93,10 +93,10 @@ impl IRGen {
                 global_ctx.global_var.insert(stmt.identifier.0.clone(), *n);
                 result += &format!("@{} = global i64 {}\n", stmt.identifier.0.clone(), *n);
             } else {
-                println!("cannot generate code for `{:?}`.", literal);
+                eprintln!("cannot generate code for `{:?}`.", literal);
             }
         } else {
-            println!("`{:?}` in let expression is not implemented.", stmt.expression.get_type());
+            eprintln!("`{:?}` in let expression is not implemented.", stmt.expression.get_type());
         }
 
         Ok(result)
