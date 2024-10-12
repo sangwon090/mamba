@@ -3,10 +3,8 @@ pub mod expr;
 use std::collections::{HashMap};
 
 use crate::parser::{DefStatement, IfStatement, LetStatement, ReturnStatement};
-use crate::parser::ast::{AST, AstNodeType, Expression, ExpressionStatement, FnCallExpression, InfixExpression, Operator, Statement};
+use crate::parser::ast::{AstNodeType, Expression, Identifier, Literal, Statement, AST};
 use crate::{error::IRGenError};
-use crate::lexer::{Identifier, Literal};
-
 pub use expr::generate_expr;
 
 pub struct IRGen {
@@ -87,16 +85,15 @@ impl IRGen {
     fn generate_global_variable(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &LetStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
         
-        if stmt.expr.get_type() == AstNodeType::Literal {
-            let literal = stmt.expr.as_any().downcast_ref::<Literal>().unwrap();
-            if let Literal::Number(n) = literal {
-                global_ctx.global_var.insert(stmt.ident.0.clone(), *n);
-                result += &format!("@{} = global i64 {}\n", stmt.ident.0.clone(), *n);
+        if let Expression::Literal(literal) = &stmt.expr {
+            if let Literal::Integer(n) = literal {
+                global_ctx.global_var.insert(stmt.ident.clone(), *n);
+                result += &format!("@{} = global i64 {}\n", stmt.ident.clone(), *n);
             } else {
-                eprintln!("cannot generate code for `{:?}`.", literal);
+                eprintln!("cannot generate code for {:?}", literal);
             }
         } else {
-            eprintln!("`{:?}` in let expression is not implemented.", stmt.expr.get_type());
+            eprintln!("{:?} in let expression is not implemented.", stmt.expr);
         }
 
         Ok(result)
@@ -179,7 +176,7 @@ impl IRGen {
     fn generate_literal(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, literal: &Literal) -> Result<(String, u64), IRGenError> {
         let mut result = String::new();
 
-        let idx = if let Literal::Number(n) = literal {
+        let idx = if let Literal::Integer(n) = literal {
             let ptr_idx = global_ctx.get_label();
             let ret_idx = global_ctx.get_label();
 
@@ -198,12 +195,12 @@ impl IRGen {
     fn generate_ident(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, ident: &Identifier) -> Result<(String, String), IRGenError> {
         let mut result = String::new();
 
-        let idx = if scoped_ctx.local_var.contains_key(&ident.0) {
-            ident.0.clone()
-        } else if global_ctx.global_var.contains_key(&ident.0) {
-            ident.0.clone()
+        let idx = if scoped_ctx.local_var.contains_key(ident) {
+            ident.clone()
+        } else if global_ctx.global_var.contains_key(ident) {
+            ident.clone()
         } else {
-            panic!("Unable to find identifier {}", ident.0);
+            panic!("Unable to find identifier {}", ident);
         };
 
         Ok((result, idx))

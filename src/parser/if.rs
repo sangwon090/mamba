@@ -6,7 +6,7 @@ use core::any::Any;
 use super::pratt::Precedence;
 
 pub struct IfStatement {
-    pub condition: Box<dyn Expression>,
+    pub condition: Expression,
     pub then: Box<dyn Statement>,
     pub r#else: Option<Box<dyn Statement>>,
 }

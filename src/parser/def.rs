@@ -2,8 +2,9 @@ use crate::parser::{Parser, Token, Keyword};
 use crate::parser::ast::{Statement, AstNodeType};
 use crate::error::ParseError;
 use crate::types::DataType;
-use crate::lexer::Identifier;
 use core::any::Any;
+
+use super::ast::Identifier;
 
 pub struct DefStatement {
     pub name: Identifier,
@@ -165,7 +166,7 @@ impl Statement for DefStatement {
     }
 
     fn to_string(&self) -> String {
-        let mut result = format!("{{ type: fnDef, name: {}, returnType: {}, args: {:?}, stmts: {{ ", &self.name.0, &self.r#type.to_mnemonic(), self.params);
+        let mut result = format!("{{ type: fnDef, name: {}, returnType: {}, args: {:?}, stmts: {{ ", &self.name, &self.r#type.to_mnemonic(), self.params);
         for stmt in &self.stmts {
             result.push_str(&stmt.to_string())
         }

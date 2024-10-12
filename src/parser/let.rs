@@ -1,15 +1,15 @@
-use crate::lexer::Identifier;
 use crate::parser::{Parser, PrattParser, Token, Keyword};
 use crate::parser::ast::{Statement, Expression, AstNodeType};
 use crate::error::ParseError;
 use crate::types::DataType;
+use super::ast::Identifier;
 use super::pratt::Precedence;
 use core::any::Any;
 
 pub struct LetStatement {
     pub ident: Identifier,
     pub r#type: DataType,
-    pub expr: Box<dyn Expression>,
+    pub expr: Expression,
 }
 
 impl Statement for LetStatement {
@@ -79,7 +79,7 @@ impl Statement for LetStatement {
     }
 
     fn to_string(&self) -> String {   
-        format!("{{ type: let, name: {}, dataType: {}, expr: {} }}", &self.ident.0, &self.r#type.to_mnemonic(), self.expr.to_string())
+        format!("{{ type: let, name: {}, dataType: {}, expr: {} }}", &self.ident, &self.r#type.to_mnemonic(), self.expr.to_string())
     }
 
     fn get_type(&self) -> AstNodeType {

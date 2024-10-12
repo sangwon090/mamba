@@ -1,58 +1,28 @@
-use crate::parser::ast::{AstNodeType, Expression, FnCallExpression, InfixExpression, Operator};
+use crate::parser::ast::{AstNodeType, Expression, FnCallExpression, Identifier, InfixExpression, Operator};
 use crate::error::IRGenError;
-use crate::lexer::{Identifier, Literal};
 use crate::codegen::llvm::*;
 
-pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, expr: &Box<dyn Expression>) -> Result<(String, String), IRGenError> {
+pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, expr: &Expression) -> Result<(String, String), IRGenError> {
     let mut result = String::new();
 
-    let idx = match expr.get_type() {
-        AstNodeType::InfixExpression => {
-            let expr = expr.as_any().downcast_ref::<InfixExpression>().unwrap();
-            
-            let left_idx = match expr.left.get_type() {
-                AstNodeType::InfixExpression | AstNodeType::PrefixExpression | AstNodeType::FnCallExpression => {
-                    let (expr_code, expr_idx) = generate_expr(global_ctx, scoped_ctx, &expr.left).unwrap();
-                    result += &expr_code;
-                    expr_idx.to_string()
-                },
-                AstNodeType::Literal => {
-                    let literal = expr.left.as_any().downcast_ref::<Literal>().unwrap();
-                    let (literal_code, literal_idx) = IRGen::generate_literal(global_ctx, scoped_ctx, literal).unwrap();
-                    result += &literal_code;
-                    literal_idx.to_string()
-                },
-                AstNodeType::Identifier => {
-                    let ident = expr.left.as_any().downcast_ref::<Identifier>().unwrap();
-                    let (ident_code, ident_idx) = IRGen::generate_ident(global_ctx, scoped_ctx, &ident).unwrap();
-                    result += &ident_code;
-                    ident_idx
-                },
-                _ => global_ctx.get_label().to_string(),
+    let idx = match expr {
+        Expression::Prefix(prefix) => todo!(),
+        Expression::Infix(expr) => {
+            let left_idx = {
+                let (code, idx) = generate_expr(global_ctx, scoped_ctx, &expr.left).unwrap();
+                result += &code;
+                idx.to_string()
             };
-
-            let right_idx = match expr.right.get_type() {
-                AstNodeType::InfixExpression | AstNodeType::PrefixExpression | AstNodeType::FnCallExpression => {
-                    let (expr_code, expr_idx) = generate_expr(global_ctx, scoped_ctx, &expr.right).unwrap();
-                    result += &expr_code;
-                    expr_idx.to_string()
-                },
-                AstNodeType::Literal => {
-                    let literal = expr.right.as_any().downcast_ref::<Literal>().unwrap();
-                    let (literal_code, literal_idx) = IRGen::generate_literal(global_ctx, scoped_ctx, literal).unwrap();
-                    result += &literal_code;
-                    literal_idx.to_string()
-                },
-                AstNodeType::Identifier => {
-                    let ident = expr.right.as_any().downcast_ref::<Identifier>().unwrap();
-                    let (ident_code, ident_idx) = IRGen::generate_ident(global_ctx, scoped_ctx, &ident).unwrap();
-                    result += &ident_code;
-                    ident_idx
-                },
-                _ => global_ctx.get_label().to_string(),
+            
+            let right_idx = {
+                let (code, idx) = generate_expr(global_ctx, scoped_ctx, &expr.right).unwrap();
+                result += &code;
+                idx.to_string()
             };
 
             let idx = global_ctx.get_label();
+
+            // TODO: type checking
             match expr.operator {
                 Operator::Equal | Operator::NotEqual |
                 Operator::Less | Operator::LessEqual |
@@ -65,15 +35,12 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
                 Operator::LeftShift => result += &format!("%{} = shl i64 %{}, %{}\n", idx, left_idx, right_idx),
                 Operator::RightShift => result += &format!("%{} = ashr i64 %{}, %{}\n", idx, left_idx, right_idx),
 
-                _ => panic!("{} cannot be infix expression!", expr.to_string()),
+                _ => panic!("{} cannot be infix expression!", expr),
             };
 
             idx.to_string()
         },
-        AstNodeType::PrefixExpression => "".into(),
-        AstNodeType::FnCallExpression => {
-            let expr = expr.as_any().downcast_ref::<FnCallExpression>().unwrap();
-
+        Expression::FnCall(expr) => {
             if !global_ctx.fn_decl.contains_key(&expr.ident.to_string()) {
                 panic!("Unable to find function `{}`", &expr.ident.to_string());
             }
@@ -91,16 +58,12 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
 
             idx.to_string()
         },
-        AstNodeType::Literal => {
-            let literal = expr.as_any().downcast_ref::<Literal>().unwrap();
+        Expression::Literal(literal) => {
             let (literal_code, literal_idx) = IRGen::generate_literal(global_ctx, scoped_ctx, literal).unwrap();
             result += &literal_code;
             literal_idx.to_string()
         },
-        _ => {
-            eprintln!("WHAT??? {:?}\n", expr.get_type());
-            "".into()
-        },
+        Expression::Identifier(ident) => ident.clone(),
     };
 
     Ok((result, idx))

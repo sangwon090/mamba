@@ -1,8 +1,9 @@
 use crate::parser::{Parser, PrattParser};
 use crate::error::ParseError;
 use crate::parser::pratt::Precedence;
-use crate::lexer::{Token, Identifier};
+use crate::lexer::Token;
 use core::any::Any;
+use std::fmt;
 
 pub struct AST {
     pub stmts: Vec<Box<dyn Statement>>,
@@ -29,15 +30,76 @@ pub trait Statement {
     fn as_any(&self) -> &dyn Any;
 }
 
-pub trait Expression {
-    //fn parse(parser: &mut Parser) -> Result<Self, ParseError> where Self: Sized;
-    fn to_string(&self) -> String;
-    fn get_type(&self) -> AstNodeType;
-    fn as_any(&self) -> &dyn Any;
+#[derive(Debug)]
+pub enum Expression {
+    Prefix(PrefixExpression),
+    Infix(InfixExpression),
+    FnCall(FnCallExpression),
+    Identifier(Identifier),
+    Literal(Literal),
+}
+
+#[derive(Debug)]
+pub struct PrefixExpression {
+    pub operator: Operator,
+    pub right: Box<Expression>,
+}
+
+
+#[derive(Debug)]
+pub struct InfixExpression {
+    pub operator: Operator,
+    pub left: Box<Expression>,
+    pub right: Box<Expression>,
+}
+
+
+#[derive(Debug)]
+pub struct FnCallExpression {
+    pub ident: Identifier,
+    pub args: Vec<Expression>,
+}
+
+pub type Identifier = String;
+
+impl fmt::Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Prefix(expr) => write!(f, "{}", expr),
+            Self::Infix(expr) => write!(f, "{}", expr),
+            Self::FnCall(expr) => write!(f, "{}", expr),
+            Self::Identifier(ident) => write!(f, "{}", ident),
+            Self::Literal(literal) => write!(f, "{:?}", literal),
+        }
+    }
+}
+
+impl fmt::Display for PrefixExpression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{ operator: {:?}, right: {} }}", self.operator, self.right)
+    }
+}
+
+impl fmt::Display for InfixExpression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{ operator: {:?}, left: {}, right: {} }}", self.operator, self.left, self.right)
+    }
+}
+
+impl fmt::Display for FnCallExpression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{ type: fnCall, name: {}, args: {{ {} }} }}", self.ident, self.args.iter().map(|arg| arg.to_string()).collect::<Vec<String>>().join(", "))
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Literal {
+    Integer(i64),
+    String(String),
 }
 
 pub struct ExpressionStatement {
-    expr: Box<dyn Expression>,
+    expr: Expression,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -78,45 +140,6 @@ impl Operator {
     }
 }
 
-pub struct PrefixExpression {
-    pub operator: Operator,
-    pub right: Box<dyn Expression>
-}
-
-impl Expression for PrefixExpression {
-    fn to_string(&self) -> String {
-        format!("{{ operator: {:?}, right: {} }}", self.operator, self.right.to_string())
-    }
-
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::PrefixExpression
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
-pub struct InfixExpression {
-    pub operator: Operator,
-    pub left: Box<dyn Expression>,
-    pub right: Box<dyn Expression>,
-}
-
-impl Expression for InfixExpression {
-    fn to_string(&self) -> String {
-        format!("{{ operator: {:?}, left: {}, right: {} }}", self.operator, self.left.to_string(), self.right.to_string())
-    }
-
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::InfixExpression
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
 impl Statement for ExpressionStatement {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
         let expr = if let Some(token) = parser.next(0) {
@@ -150,33 +173,6 @@ impl Statement for ExpressionStatement {
         self
     }
 } 
-
-pub struct FnCallExpression {
-    pub ident: Identifier,
-    pub args: Vec<Box<dyn Expression>>,
-}
-
-impl Expression for FnCallExpression {
-    fn to_string(&self) -> String {
-        let mut result = format!("{{ type: fnCall, name: {}, args: {{ ", self.ident.0);
-
-        for arg in &self.args {
-            result.push_str(&arg.to_string());
-            result.push_str(", ");
-        }
-
-        result.push_str("} }");
-        result
-    }
-
-    fn get_type(&self) -> AstNodeType {
-        AstNodeType::FnCallExpression
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
 
 impl AST {
     pub fn new() -> AST {

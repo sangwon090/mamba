@@ -1,7 +1,7 @@
 mod token;
-pub use token::{Token, Identifier, Keyword, Literal};
+pub use token::{Token, Keyword};
 
-use crate::error::LexerError;
+use crate::{error::LexerError, parser::ast::Literal};
 
 pub struct Lexer {
     source: Vec<Vec<char>>,
@@ -40,7 +40,7 @@ impl Lexer {
             "str" => Token::Keyword(Keyword::Str),
             "void" => Token::Keyword(Keyword::Void),
             "return" => Token::Keyword(Keyword::Return),
-            _ => Token::Identifier(Identifier(ident.into())),
+            _ => Token::Identifier(ident.into()),
         }
     }
 
@@ -154,7 +154,7 @@ impl Lexer {
                         self.pos += 1;
                         break;
                     },
-                    '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => tokens.push(Token::Literal(Literal::Number(self.read_number()))),
+                    '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => tokens.push(Token::Literal(Literal::Integer(self.read_number()))),
                     '"' => {
                         tokens.push(Token::Literal(Literal::String(self.read_string().unwrap())));
                         self.pos += 1;

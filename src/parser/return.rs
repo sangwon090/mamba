@@ -5,7 +5,7 @@ use super::pratt::Precedence;
 use core::any::Any;
 
 pub struct ReturnStatement {
-    pub expr: Box<dyn Expression>,
+    pub expr: Expression,
 }
 
 impl Statement for ReturnStatement {
@@ -30,7 +30,7 @@ impl Statement for ReturnStatement {
     } 
 
     fn to_string(&self) -> String {
-        format!("{{ type: return, expr: {} }}", self.expr.to_string())
+        format!("{{ type: return, expr: {:?} }}", self.expr)
     }
 
     fn get_type(&self) -> AstNodeType {

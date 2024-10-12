@@ -1,4 +1,4 @@
-use mamba::lexer::{Lexer, Token, Keyword, Literal, Identifier};
+use mamba::lexer::{Lexer, Token};
 use mamba::parser::Parser;
 use mamba::parser::ast::Expression;
 use mamba::parser::pratt::PrattParser;
@@ -8,7 +8,7 @@ fn get_tokens(source: &str) -> Vec<Token> {
     lexer.get_tokens().unwrap()
 }
 
-fn test_prefix_expression(tokens: Vec<Token>) -> Box<dyn Expression> {
+fn test_prefix_expression(tokens: Vec<Token>) -> Expression {
     let mut parser = Parser::new(tokens);
     let result = PrattParser::parse_nud(&mut parser).unwrap();
     
@@ -17,17 +17,17 @@ fn test_prefix_expression(tokens: Vec<Token>) -> Box<dyn Expression> {
 
 #[test]
 fn test_prefix_expressions() {
-    assert_eq!(test_prefix_expression(get_tokens("+123")).to_string(), "{ operator: UnaryPlus, right: Number(123) }");
-    assert_eq!(test_prefix_expression(get_tokens("-123")).to_string(), "{ operator: UnaryMinus, right: Number(123) }");
-    assert_eq!(test_prefix_expression(get_tokens("~123")).to_string(), "{ operator: BitwiseNot, right: Number(123) }");
+    assert_eq!(test_prefix_expression(get_tokens("+123")).to_string(), "{ operator: UnaryPlus, right: Integer(123) }");
+    assert_eq!(test_prefix_expression(get_tokens("-123")).to_string(), "{ operator: UnaryMinus, right: Integer(123) }");
+    assert_eq!(test_prefix_expression(get_tokens("~123")).to_string(), "{ operator: BitwiseNot, right: Integer(123) }");
     assert_eq!(test_prefix_expression(get_tokens("+foo")).to_string(), "{ operator: UnaryPlus, right: foo }");
     assert_eq!(test_prefix_expression(get_tokens("-foo")).to_string(), "{ operator: UnaryMinus, right: foo }");
     assert_eq!(test_prefix_expression(get_tokens("~foo")).to_string(), "{ operator: BitwiseNot, right: foo }");
 }
 
-fn test_expression(tokens: Vec<Token>) -> Box<dyn Expression> {
+fn test_expression(tokens: Vec<Token>) -> Expression {
     let mut parser = Parser::new(tokens);
-    let result = PrattParser::parse_expression(&mut parser, mamba::parser::pratt::Precedence::Lowest).unwrap();
+    let result = PrattParser::parse_expr(&mut parser, mamba::parser::pratt::Precedence::Lowest).unwrap();
 
     result
 }
@@ -53,10 +53,10 @@ fn test_mixed_expressions() {
     assert_eq!(test_expression(get_tokens("a * b * c")).to_string(), "{ operator: Multiply, left: { operator: Multiply, left: a, right: b }, right: c }");
     assert_eq!(test_expression(get_tokens("a * b / c")).to_string(), "{ operator: Divide, left: { operator: Multiply, left: a, right: b }, right: c }");
     assert_eq!(test_expression(get_tokens("a + b * c + d / e - f")).to_string(), "{ operator: Minus, left: { operator: Plus, left: { operator: Plus, left: a, right: { operator: Multiply, left: b, right: c } }, right: { operator: Divide, left: d, right: e } }, right: f }");
-    assert_eq!(test_expression(get_tokens("5 > 4 == 3 < 4")).to_string(), "{ operator: Equal, left: { operator: Greater, left: Number(5), right: Number(4) }, right: { operator: Less, left: Number(3), right: Number(4) } }");
-    assert_eq!(test_expression(get_tokens("5 < 4 != 3 > 4")).to_string(), "{ operator: NotEqual, left: { operator: Less, left: Number(5), right: Number(4) }, right: { operator: Greater, left: Number(3), right: Number(4) } }");
-    assert_eq!(test_expression(get_tokens("1 + (2 + 3) + 4")).to_string(), "{ operator: Plus, left: { operator: Plus, left: Number(1), right: { operator: Plus, left: Number(2), right: Number(3) } }, right: Number(4) }");
-    assert_eq!(test_expression(get_tokens("(5 + 5) * 2")).to_string(), "{ operator: Multiply, left: { operator: Plus, left: Number(5), right: Number(5) }, right: Number(2) }");
-    assert_eq!(test_expression(get_tokens("2 / (5 + 5)")).to_string(), "{ operator: Divide, left: Number(2), right: { operator: Plus, left: Number(5), right: Number(5) } }");
-    assert_eq!(test_expression(get_tokens("-(5 + 5)")).to_string(), "{ operator: UnaryMinus, right: { operator: Plus, left: Number(5), right: Number(5) } }");
+    assert_eq!(test_expression(get_tokens("5 > 4 == 3 < 4")).to_string(), "{ operator: Equal, left: { operator: Greater, left: Integer(5), right: Integer(4) }, right: { operator: Less, left: Integer(3), right: Integer(4) } }");
+    assert_eq!(test_expression(get_tokens("5 < 4 != 3 > 4")).to_string(), "{ operator: NotEqual, left: { operator: Less, left: Integer(5), right: Integer(4) }, right: { operator: Greater, left: Integer(3), right: Integer(4) } }");
+    assert_eq!(test_expression(get_tokens("1 + (2 + 3) + 4")).to_string(), "{ operator: Plus, left: { operator: Plus, left: Integer(1), right: { operator: Plus, left: Integer(2), right: Integer(3) } }, right: Integer(4) }");
+    assert_eq!(test_expression(get_tokens("(5 + 5) * 2")).to_string(), "{ operator: Multiply, left: { operator: Plus, left: Integer(5), right: Integer(5) }, right: Integer(2) }");
+    assert_eq!(test_expression(get_tokens("2 / (5 + 5)")).to_string(), "{ operator: Divide, left: Integer(2), right: { operator: Plus, left: Integer(5), right: Integer(5) } }");
+    assert_eq!(test_expression(get_tokens("-(5 + 5)")).to_string(), "{ operator: UnaryMinus, right: { operator: Plus, left: Integer(5), right: Integer(5) } }");
 }
