@@ -14,7 +14,7 @@ pub struct IRGen {
 
 #[derive(Default)]
 pub struct GlobalContext {
-    global_var: HashMap<String, i64>,
+    global_var: HashMap<String, Literal>,
     fn_decl: HashMap<String, Vec<String>>,
     label_idx: u64,
 }
@@ -71,11 +71,16 @@ impl IRGen {
         let mut result = String::new();
         
         if let Expression::Literal(literal) = &stmt.expr {
-            if let Literal::Integer(n) = literal {
-                global_ctx.global_var.insert(stmt.ident.clone(), *n);
-                result += &format!("@{} = global i64 {}\n", stmt.ident.clone(), *n);
-            } else {
-                eprintln!("cannot generate code for {:?}", literal);
+            match literal {
+                Literal::Integer(n) => {
+                    global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
+                    result += &format!("@{} = global i64 {}\n", stmt.ident.clone(), *n);
+                },
+                Literal::String(s) => {
+                    global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
+                    result += &format!("@{} = private unnamed_addr constant [{} x i8] c\"{}\\00\"\n", stmt.ident, s.len() + 1, s);
+                },
+                _ => todo!(),
             }
         } else {
             eprintln!("{:?} in let expression is not implemented.", stmt.expr);
