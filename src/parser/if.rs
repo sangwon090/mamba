@@ -48,56 +48,47 @@ impl Statement for IfStatement {
             return Err(ParseError("[IfStatement] insufficient tokens".into()));
         }
 
-        if let Some(token) = parser.next(0) {
-            if let Token::Keyword(keyword) = token {
-                if keyword == Keyword::Else {
-                    parser.pos += 1;
+        if let Some(Token::Keyword(keyword)) = parser.next(0) {
+            if keyword == Keyword::Else {
+                parser.pos += 1;
 
-                    if let Some(token) = parser.next(0) {
-                        if let Token::Colon = token {
-                            parser.pos += 1;
-                        } else {
-                            return Err(ParseError(format!("[IfStatement] expected `:`, found {token:?}")));
-                        }
+                if let Some(token) = parser.next(0) {
+                    if let Token::Colon = token {
+                        parser.pos += 1;
                     } else {
-                        return Err(ParseError("[IfStatement] insufficient tokens".into()));
+                        return Err(ParseError(format!("[IfStatement] expected `:`, found {token:?}")));
                     }
-
-                    if let Some(token) = parser.next(0) {
-                        if let Token::Indent = token {
-                            parser.pos += 1;
-                        } else {
-                            return Err(ParseError(format!("[IfStatement] expected indent, found {token:?}")));
-                        }
-                    } else {
-                        return Err(ParseError("[IfStatement] insufficient tokens".into()));
-                    }
-                    
-            
-                    let r#else = parser.parse_stmt().unwrap().unwrap();
-            
-                    if let Some(token) = parser.next(0) {
-                        if let Token::Dedent = token {
-                            parser.pos += 1;
-                        } else {
-                            return Err(ParseError(format!("[IfStatement] expected dedent, found {token:?}")));
-                        }
-                    } else {
-                        return Err(ParseError("[IfStatement] insufficient tokens".into()));
-                    }
-                    
-                    Ok(IfStatement {
-                        condition,
-                        then,
-                        r#else: Some(r#else),
-                    })
                 } else {
-                    Ok(IfStatement {
-                        condition,
-                        then,
-                        r#else: None,
-                    })
+                    return Err(ParseError("[IfStatement] insufficient tokens".into()));
                 }
+
+                if let Some(token) = parser.next(0) {
+                    if let Token::Indent = token {
+                        parser.pos += 1;
+                    } else {
+                        return Err(ParseError(format!("[IfStatement] expected indent, found {token:?}")));
+                    }
+                } else {
+                    return Err(ParseError("[IfStatement] insufficient tokens".into()));
+                }
+        
+                let r#else = parser.parse_stmt().unwrap().unwrap();
+        
+                if let Some(token) = parser.next(0) {
+                    if let Token::Dedent = token {
+                        parser.pos += 1;
+                    } else {
+                        return Err(ParseError(format!("[IfStatement] expected dedent, found {token:?}")));
+                    }
+                } else {
+                    return Err(ParseError("[IfStatement] insufficient tokens".into()));
+                }
+                
+                Ok(IfStatement {
+                    condition,
+                    then,
+                    r#else: Some(r#else),
+                })
             } else {
                 Ok(IfStatement {
                     condition,
@@ -116,9 +107,9 @@ impl Statement for IfStatement {
 
     fn to_string(&self) -> String {
         if let Some(r#else) = &self.r#else {
-            format!("{{ type: if, condition: {}, then: {}, else: {} }}", self.condition.to_string(), self.then.to_string(), r#else.to_string())
+            format!("{{ type: if, condition: {}, then: {}, else: {} }}", self.condition, self.then.to_string(), r#else.to_string())
         } else {
-            format!("{{ type: if, condition: {}, then: {} }}", self.condition.to_string(), self.then.to_string())
+            format!("{{ type: if, condition: {}, then: {} }}", self.condition, self.then.to_string())
         }
     }
 

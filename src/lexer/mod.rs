@@ -1,6 +1,7 @@
 mod token;
 pub use token::{Token, Keyword};
 
+use std::cmp::Ordering;
 use crate::{error::LexerError, parser::ast::Literal};
 
 pub struct Lexer {
@@ -104,19 +105,15 @@ impl Lexer {
 
         result.push(self.source[self.line][self.pos]);
 
-        loop {
-            if let Some(next) = self.next(1) {
-                if next.is_ascii_alphanumeric() || next == '_' {
-                    result.push(next);
-                    self.pos += 1;
-                } else {
-                    break;
-                }
+        while let Some(next) = self.next(1) {
+            if next.is_ascii_alphanumeric() || next == '_' {
+                result.push(next);
+                self.pos += 1;
             } else {
                 break;
             }
         }
-
+        
         result
     }
 
@@ -131,16 +128,20 @@ impl Lexer {
             let indent = self.read_indent();
             let indent_diff = (indent as isize) - (self.indent as isize);
 
-            if indent_diff > 0 {
-                for _ in 0..indent_diff {
-                    tokens.push(Token::Indent);
-                    indent_count += 1;
-                }
-            } else if indent_diff < 0 {
-                for _ in 0..-indent_diff {
-                    tokens.push(Token::Dedent);
-                    indent_count -= 1;
-                }
+            match indent_diff.cmp(&0) {
+                Ordering::Greater => {
+                    for _ in 0..indent_diff {
+                        tokens.push(Token::Indent);
+                        indent_count += 1;
+                    }
+                },
+                Ordering::Less => {
+                    for _ in 0..-indent_diff {
+                        tokens.push(Token::Dedent);
+                        indent_count -= 1;
+                    }
+                },
+                Ordering::Equal => { },
             }
 
             self.indent = indent;

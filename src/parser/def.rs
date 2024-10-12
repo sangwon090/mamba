@@ -1,4 +1,4 @@
-use crate::parser::{Parser, Token, Keyword};
+use crate::parser::{Parser, Token};
 use crate::parser::ast::{Statement, AstNodeType};
 use crate::error::ParseError;
 use crate::types::DataType;

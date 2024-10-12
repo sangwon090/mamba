@@ -29,6 +29,8 @@ fn main() {
 
             let mut irgen = IRGen::new(ast);
             let ir = irgen.generate_ir().unwrap();
+
+            println!("{ir}")
         }
     } else {
         let file = &args[1];

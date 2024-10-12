@@ -1,4 +1,4 @@
-use crate::parser::ast::{AstNodeType, Expression, FnCallExpression, Identifier, InfixExpression, Operator};
+use crate::parser::ast::{Expression, Operator};
 use crate::error::IRGenError;
 use crate::codegen::llvm::*;
 
@@ -6,7 +6,7 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
     let mut result = String::new();
 
     let idx = match expr {
-        Expression::Prefix(prefix) => todo!(),
+        Expression::Prefix(_prefix) => todo!(),
         Expression::Infix(expr) => {
             let left_idx = {
                 let (code, idx) = generate_expr(global_ctx, scoped_ctx, &expr.left).unwrap();
@@ -46,7 +46,7 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
             }
             
             let params = expr.args.iter().map(|expr| {
-                let (code, idx) = generate_expr(global_ctx, scoped_ctx, &expr).unwrap();
+                let (code, idx) = generate_expr(global_ctx, scoped_ctx, expr).unwrap();
                 result += &code;
                 format!("i64 %{}", idx)
             }).collect::<Vec<String>>();
@@ -63,7 +63,15 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
             result += &literal_code;
             literal_idx.to_string()
         },
-        Expression::Identifier(ident) => ident.clone(),
+        Expression::Identifier(ident) => {
+            let idx = if global_ctx.global_var.contains_key(ident) || scoped_ctx.local_var.contains_key(ident){
+                ident.clone()
+            } else {
+                panic!("Unable to find identifier {}", ident);
+            };
+
+            idx.to_string()
+        },
     };
 
     Ok((result, idx))

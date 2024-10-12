@@ -1,4 +1,4 @@
-use crate::parser::{Parser, PrattParser, Token, Keyword};
+use crate::parser::{Parser, PrattParser, Token};
 use crate::parser::ast::{Statement, Expression, AstNodeType};
 use crate::error::ParseError;
 use crate::types::DataType;
@@ -79,7 +79,7 @@ impl Statement for LetStatement {
     }
 
     fn to_string(&self) -> String {   
-        format!("{{ type: let, name: {}, dataType: {}, expr: {} }}", &self.ident, &self.r#type.to_mnemonic(), self.expr.to_string())
+        format!("{{ type: let, name: {}, dataType: {}, expr: {} }}", &self.ident, &self.r#type.to_mnemonic(), self.expr)
     }
 
     fn get_type(&self) -> AstNodeType {

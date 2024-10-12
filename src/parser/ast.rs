@@ -5,6 +5,7 @@ use crate::lexer::Token;
 use core::any::Any;
 use std::fmt;
 
+#[derive(Default)]
 pub struct AST {
     pub stmts: Vec<Box<dyn Statement>>,
 }
@@ -142,7 +143,7 @@ impl Operator {
 
 impl Statement for ExpressionStatement {
     fn parse(parser: &mut Parser) -> Result<Self, ParseError> {
-        let expr = if let Some(token) = parser.next(0) {
+        let expr = if parser.next(0).is_some() {
             PrattParser::parse_expr(parser, Precedence::Lowest).unwrap()
         } else {
             return Err(ParseError("[ExpressionStatement] insufficient tokens".into()));
