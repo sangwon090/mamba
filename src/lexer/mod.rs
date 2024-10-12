@@ -1,8 +1,8 @@
 mod token;
-pub use token::{Token, Keyword};
+pub use token::{Token, Keyword, Literal};
 
 use std::cmp::Ordering;
-use crate::{error::LexerError, parser::Literal};
+use crate::error::LexerError;
 
 pub struct Lexer {
     source: Vec<Vec<char>>,

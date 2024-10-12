@@ -1,4 +1,4 @@
-use crate::parser::{Identifier, Literal};
+use crate::parser::Identifier;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
@@ -72,4 +72,10 @@ pub enum Keyword {
     Str,
     Void,
     Return,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Literal {
+    Integer(i64),
+    String(String),
 }

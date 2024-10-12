@@ -2,7 +2,8 @@ pub mod expr;
 
 use std::collections::HashMap;
 
-use crate::parser::{DefStatement, Expression, IfStatement, LetStatement, Literal, ReturnStatement, Statement, AST};
+use crate::parser::{DefStatement, Expression, IfStatement, LetStatement, ReturnStatement, Statement, AST};
+use crate::lexer::Literal;
 use crate::error::IRGenError;
 pub use expr::generate_expr;
 

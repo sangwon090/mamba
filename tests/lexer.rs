@@ -1,6 +1,4 @@
-use mamba::lexer::{Lexer, Token, Keyword};
-use mamba::parser::*;
-
+use mamba::lexer::{Lexer, Token, Keyword, Literal};
 const SAMPLE_CODE: &str = "
 let foo: int = 123;
 

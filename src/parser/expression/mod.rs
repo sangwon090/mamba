@@ -1,4 +1,5 @@
 use std::fmt;
+use crate::lexer::Literal;
 
 #[derive(Debug)]
 pub enum Expression {
@@ -61,13 +62,6 @@ impl fmt::Display for FnCallExpression {
         write!(f, "{{ type: fnCall, name: {}, args: {{ {} }} }}", self.ident, self.args.iter().map(|arg| arg.to_string()).collect::<Vec<String>>().join(", "))
     }
 }
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Literal {
-    Integer(i64),
-    String(String),
-}
-
 
 #[derive(Debug, Clone, Copy)]
 pub enum Operator {
