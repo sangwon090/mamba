@@ -1,7 +1,6 @@
 use mamba::lexer::{Lexer, Token};
-use mamba::parser::Parser;
-use mamba::parser::ast::Expression;
 use mamba::parser::pratt::PrattParser;
+use mamba::parser::*;
 
 fn get_tokens(source: &str) -> Vec<Token> {
     let mut lexer = Lexer::new(source.into());

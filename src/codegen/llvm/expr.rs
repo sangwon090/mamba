@@ -1,4 +1,4 @@
-use crate::parser::ast::{Expression, Operator};
+use crate::parser::{Expression, Operator};
 use crate::error::IRGenError;
 use crate::codegen::llvm::*;
 

@@ -1,20 +1,20 @@
 use crate::lexer::{Token, Keyword};
-use crate::parser::ast::{AST, Statement, Expression, ExpressionStatement};
 use crate::parser::pratt::PrattParser;
-pub use crate::parser::{r#if::IfStatement, r#let::LetStatement, r#return::ReturnStatement, def::DefStatement};
 use crate::error::ParseError;
 
-pub mod ast;
 pub mod pratt;
-mod r#if;
-mod r#let;
-mod r#return;
-mod def;
+mod expression;
+mod statement;
+
+pub use expression::*;
+pub use statement::*;
 
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
 }
+
+pub type AST = Vec<Statement>;
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Parser {
@@ -32,27 +32,27 @@ impl Parser {
         }
     }
 
-    pub fn parse_stmt(&mut self) -> Result<Option<Box<dyn Statement>>, ParseError> {
+    pub fn parse_stmt(&mut self) -> Result<Option<Statement>, ParseError> {
         let token = &self.tokens[self.pos];
 
-        let stmt: Option<Box<dyn Statement>> = match token {
+        let stmt: Option<Statement> = match token {
             Token::Keyword(keyword) => {
                 match keyword {
                     Keyword::Def => {
                         self.pos += 1;
-                        Some(Box::new(DefStatement::parse(self).unwrap()))
+                        Some(Statement::Def(parse_def(self).unwrap()))
                     },
                     Keyword::If => {
                         self.pos += 1;
-                        Some(Box::new(IfStatement::parse(self).unwrap()))
+                        Some(Statement::If(parse_if(self).unwrap()))
                     },
                     Keyword::Let => {
                         self.pos += 1;
-                        Some(Box::new(LetStatement::parse(self).unwrap()))
+                        Some(Statement::Let(parse_let(self).unwrap()))
                     },
                     Keyword::Return => {
                         self.pos += 1;
-                        Some(Box::new(ReturnStatement::parse(self).unwrap()))
+                        Some(Statement::Return(parse_return(self).unwrap()))
                     },
                     _ => {
                         self.pos += 1;
@@ -63,7 +63,7 @@ impl Parser {
             Token::EOF => {
                 None
             },
-            _ => Some(Box::new(ExpressionStatement::parse(self).unwrap())),
+            _ => Some(Statement::Expression(parse_expr_stmt(self).unwrap())),
         };
 
         Ok(stmt)
@@ -76,7 +76,7 @@ impl Parser {
             let stmt = self.parse_stmt ().unwrap();
 
             if let Some(stmt) = stmt {
-                ast.stmts.push(stmt);
+                ast.push(stmt);
             } else {
                 break;
             }

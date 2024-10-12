@@ -2,8 +2,7 @@ pub mod expr;
 
 use std::collections::HashMap;
 
-use crate::parser::{DefStatement, IfStatement, LetStatement, ReturnStatement};
-use crate::parser::ast::{AstNodeType, Expression, Literal, Statement, AST};
+use crate::parser::{DefStatement, Expression, IfStatement, LetStatement, Literal, ReturnStatement, Statement, AST};
 use crate::error::IRGenError;
 pub use expr::generate_expr;
 
@@ -45,7 +44,7 @@ impl IRGen {
         let mut scoped_ctx = ScopedContext::default();
 
         result += include_str!("stub.ll");
-        result += &self.ast.stmts.iter()
+        result += &self.ast.iter()
             .map(|stmt| IRGen::generate_stmt(&mut self.context, &mut scoped_ctx, stmt).unwrap())
             .collect::<Vec<String>>()
             .join("");
@@ -53,16 +52,15 @@ impl IRGen {
         Ok(result)
     }
 
-    fn generate_stmt(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &Box<dyn Statement>) -> Result<String, IRGenError> {
+    fn generate_stmt(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &Statement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
-        match stmt.get_type() {
-            // TODO: check if local or global
-            AstNodeType::LetStatement => result += &IRGen::generate_global_variable(global_ctx, scoped_ctx, stmt.as_any().downcast_ref::<LetStatement>().unwrap()).unwrap(),
-            AstNodeType::DefStatement => result += &IRGen::generate_def(global_ctx, scoped_ctx, stmt.as_any().downcast_ref::<DefStatement>().unwrap()).unwrap(),
-            AstNodeType::IfStatement => result += &IRGen::generate_if(global_ctx, scoped_ctx, stmt.as_any().downcast_ref::<IfStatement>().unwrap()).unwrap(),
-            AstNodeType::ReturnStatement => result += &IRGen::generate_ret(global_ctx, scoped_ctx, stmt.as_any().downcast_ref::<ReturnStatement>().unwrap()).unwrap(),
-            _ => {},
+        match stmt {
+            Statement::Let(stmt) => result += &IRGen::generate_global_variable(global_ctx, scoped_ctx, stmt).unwrap(),
+            Statement::Def(stmt) => result += &IRGen::generate_def(global_ctx, scoped_ctx, stmt).unwrap(),
+            Statement::If(stmt) => result += &IRGen::generate_if(global_ctx, scoped_ctx, stmt).unwrap(),
+            Statement::Return(stmt) => result += &IRGen::generate_ret(global_ctx, scoped_ctx, stmt).unwrap(),
+            Statement::Expression(_stmt) => todo!(),
         }
 
         Ok(result)

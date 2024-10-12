@@ -1,11 +1,7 @@
-use crate::parser::Parser;
-use crate::parser::Expression;
-use crate::parser::ParseError;
+use crate::parser::{Parser, Expression, ParseError, Operator};
 use crate::lexer::Token;
-use crate::parser::ast::InfixExpression;
-use crate::parser::ast::{PrefixExpression, Operator};
 
-use super::ast::FnCallExpression;
+use super::expression::*;
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub enum Precedence {

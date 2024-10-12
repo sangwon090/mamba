@@ -2,7 +2,7 @@ mod token;
 pub use token::{Token, Keyword};
 
 use std::cmp::Ordering;
-use crate::{error::LexerError, parser::ast::Literal};
+use crate::{error::LexerError, parser::Literal};
 
 pub struct Lexer {
     source: Vec<Vec<char>>,
