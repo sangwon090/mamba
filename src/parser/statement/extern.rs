@@ -1,6 +1,6 @@
 use std::fmt;
 use crate::lexer::Keyword;
-use crate::parser::{Parser, Token, Identifier, Statement};
+use crate::parser::{Parser, Token, Identifier};
 use crate::error::ParseError;
 use crate::types::DataType;
 

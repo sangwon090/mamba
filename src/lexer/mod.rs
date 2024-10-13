@@ -172,7 +172,7 @@ impl Lexer {
                         break;
                     },
                     // TODO: parse l, ll, lll, u, ul, ull, ulll suffix
-                    '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => tokens.push(Token::Literal(Literal::SignedInteger((self.read_number().into(), SignedInteger::i32)))),
+                    '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => tokens.push(Token::Literal(Literal::SignedInteger((self.read_number(), SignedInteger::i32)))),
                     '"' => {
                         tokens.push(Token::Literal(Literal::String(self.read_string().unwrap())));
                         self.pos += 1;
