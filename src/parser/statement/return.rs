@@ -9,7 +9,7 @@ pub struct ReturnStatement {
 }
 
 pub fn parse_return(parser: &mut Parser) -> Result<ReturnStatement, ParseError> {
-    let expr = PrattParser::parse_expr(parser, Precedence::Lowest).unwrap();
+    let expr = PrattParser::parse_expr(parser, Precedence::Lowest, None).unwrap();
 
     parser.pos += 1;
 

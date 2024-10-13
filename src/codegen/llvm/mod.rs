@@ -76,11 +76,11 @@ impl IRGen {
             match literal {
                 Literal::SignedInteger((n, dtype)) => {
                     global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
-                    result += &format!("@{} = global i32 {}\n", stmt.ident.clone(), n);
+                    result += &format!("@{} = global {} {}\n", stmt.ident.clone(), dtype.to_mnemonic(), n);
                 },
                 Literal::UnsignedInteger((n, dtype)) => {
                     global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
-                    result += &format!("@{} = global i32 {}\n", stmt.ident.clone(), n);
+                    result += &format!("@{} = global {} {}\n", stmt.ident.clone(), dtype.to_mnemonic(), n);
                 },
                 Literal::String(s) => {
                     global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());

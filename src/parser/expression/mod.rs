@@ -88,7 +88,7 @@ pub enum Operator {
 }
 
 impl Operator {
-    pub fn to_mnemonic(self) -> &'static str {
+    pub fn to_mnemonic(&self) -> &'static str {
         match self {
             Operator::Equal => "eq",
             Operator::NotEqual => "ne",

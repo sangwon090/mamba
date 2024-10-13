@@ -7,7 +7,7 @@ pub struct ExpressionStatement {
 
 pub fn parse_expr_stmt(parser: &mut Parser) -> Result<ExpressionStatement, ParseError> {
     let expr = if parser.next(0).is_some() {
-        PrattParser::parse_expr(parser, Precedence::Lowest).unwrap()
+        PrattParser::parse_expr(parser, Precedence::Lowest, None).unwrap()
     } else {
         return Err(ParseError("[ExpressionStatement] insufficient tokens".into()));
     };

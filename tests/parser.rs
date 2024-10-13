@@ -26,7 +26,7 @@ fn test_prefix_expressions() {
 
 fn test_expression(tokens: Vec<Token>) -> Expression {
     let mut parser = Parser::new(tokens);
-    let result = PrattParser::parse_expr(&mut parser, mamba::parser::pratt::Precedence::Lowest).unwrap();
+    let result = PrattParser::parse_expr(&mut parser, mamba::parser::pratt::Precedence::Lowest, None).unwrap();
 
     result
 }

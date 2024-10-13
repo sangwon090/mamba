@@ -2,6 +2,7 @@ let a: i32 = 2;
 let b: i32 = 5;
 let c: i32 = -(3 - (a * b));
 let d: str = "It works on my machine :)";
+let e: i64 = 2147483649;
 
 extern puts(text: str) -> i32;
 extern fflush(buffer: i32) -> i32;

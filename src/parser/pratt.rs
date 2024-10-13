@@ -78,23 +78,44 @@ impl PrattParser {
     }
 
     // TODO: Support various types
-    pub fn parse_expr(parser: &mut Parser, precedence: Precedence) -> Result<Expression, ParseError> {
+    pub fn parse_expr(parser: &mut Parser, precedence: Precedence, expected_dtype: Option<DataType>) -> Result<Expression, ParseError> {
         let token = parser.next(0).unwrap();
 
+        // TODO: refactor
         let prefix: Option<Expression> = match token.clone() {
             Token::Identifier(ident) => Some(Expression::Identifier(ident)),
             Token::Literal(literal) => {
                 match literal {
-                    Literal::SignedInteger(n) => Some(Expression::Literal((literal, DataType::SignedInteger(SignedInteger::i32)))),
-                    Literal::UnsignedInteger(n) => Some(Expression::Literal((literal, DataType::UnsignedInteger(UnsignedInteger::u32)))),
-                    Literal::String(s) => Some(Expression::Literal((Literal::String(s), DataType::str))),
+                    Literal::SignedInteger((n, _)) => {
+                        let dtype = if let DataType::SignedInteger(signed) = expected_dtype.unwrap_or(DataType::SignedInteger(SignedInteger::i32)) {
+                            signed
+                        } else {
+                            panic!();
+                        };
+
+                        let literal = Literal::SignedInteger((n, dtype));
+                        Some(Expression::Literal((literal, DataType::SignedInteger(dtype))))
+                    },
+                    Literal::UnsignedInteger((n, _)) => {
+                        let dtype = if let DataType::UnsignedInteger(unsigned) = expected_dtype.unwrap_or(DataType::UnsignedInteger(UnsignedInteger::u32)) {
+                            unsigned
+                        } else {
+                            panic!();
+                        };
+
+                        let literal = Literal::UnsignedInteger((n, dtype));
+                        Some(Expression::Literal((literal, DataType::UnsignedInteger(dtype))))
+                    },
+                    Literal::String(s) => {
+                        Some(Expression::Literal((Literal::String(s), DataType::str)))
+                    },
                     // TODO: Unsigned Integer with 'u' suffix
                 }
             },
             Token::LParen => {
                 parser.pos += 1;
 
-                let expr = PrattParser::parse_expr(parser, Precedence::Lowest);
+                let expr = PrattParser::parse_expr(parser, Precedence::Lowest, None);
 
                 if let Some(token) = parser.next(1) {
                     if token == Token::RParen {
@@ -166,7 +187,7 @@ impl PrattParser {
 
         parser.pos += 1;
 
-        let right = PrattParser::parse_expr(parser, Precedence::Unary).unwrap();
+        let right = PrattParser::parse_expr(parser, Precedence::Unary, None).unwrap();
 
         let prefix_expr = PrefixExpression {
             operator,
@@ -193,7 +214,7 @@ impl PrattParser {
         parser.pos += 1;
 
 
-        let right = PrattParser::parse_expr(parser, precedence).unwrap();
+        let right = PrattParser::parse_expr(parser, precedence, None).unwrap();
 
         let infix_expr = InfixExpression {
             operator,
@@ -226,7 +247,7 @@ impl PrattParser {
         }
 
         loop {
-            let arg = PrattParser::parse_expr(parser, Precedence::Lowest).unwrap();
+            let arg = PrattParser::parse_expr(parser, Precedence::Lowest, None).unwrap();
             args.push(arg);
 
             parser.pos += 1;

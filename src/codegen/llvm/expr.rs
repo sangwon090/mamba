@@ -24,17 +24,19 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
             let idx = global_ctx.get_label();
 
             // TODO: type checking
+            let expr_dtype = left_dtype.to_mnemonic();
+
             match expr.operator {
                 Operator::Equal | Operator::NotEqual |
                 Operator::Less | Operator::LessEqual |
-                Operator::Greater | Operator::GreaterEqual => result += &format!("%{} = icmp {} i32 {}, {}\n", idx, expr.operator.to_mnemonic(), left_idx, right_idx),
-                Operator::Plus => result += &format!("%{} = add nsw i32 {}, {}\n", idx, left_idx, right_idx),
-                Operator::Minus => result += &format!("%{} = sub nsw i32 {}, {}\n", idx, left_idx, right_idx),
-                Operator::Multiply => result += &format!("%{} = mul nsw i32 {}, {}\n", idx, left_idx, right_idx),
-                Operator::Divide => result += &format!("%{} = sdiv i32 {}, {}\n", idx, left_idx, right_idx),
-                Operator::Modulo => result += &format!("%{} = srem i32 {}, {}\n", idx, left_idx, right_idx),
-                Operator::LeftShift => result += &format!("%{} = shl i32 {}, {}\n", idx, left_idx, right_idx),
-                Operator::RightShift => result += &format!("%{} = ashr i32 {}, {}\n", idx, left_idx, right_idx),
+                Operator::Greater | Operator::GreaterEqual => result += &format!("%{} = icmp {} {expr_dtype} {}, {}\n", idx, expr.operator.to_mnemonic(), left_idx, right_idx),
+                Operator::Plus => result += &format!("%{} = add nsw {expr_dtype} {}, {}\n", idx, left_idx, right_idx),
+                Operator::Minus => result += &format!("%{} = sub nsw {expr_dtype} {}, {}\n", idx, left_idx, right_idx),
+                Operator::Multiply => result += &format!("%{} = mul nsw {expr_dtype} {}, {}\n", idx, left_idx, right_idx),
+                Operator::Divide => result += &format!("%{} = sdiv {expr_dtype} {}, {}\n", idx, left_idx, right_idx),
+                Operator::Modulo => result += &format!("%{} = srem {expr_dtype} {}, {}\n", idx, left_idx, right_idx),
+                Operator::LeftShift => result += &format!("%{} = shl {expr_dtype} {}, {}\n", idx, left_idx, right_idx),
+                Operator::RightShift => result += &format!("%{} = ashr {expr_dtype} {}, {}\n", idx, left_idx, right_idx),
 
                 _ => panic!("{} cannot be infix expression!", expr),
             };

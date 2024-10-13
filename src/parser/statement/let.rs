@@ -54,7 +54,7 @@ pub fn parse_let(parser: &mut Parser) -> Result<LetStatement, ParseError> {
         return Err(ParseError("[LetStatement] insufficient tokens".into()));
     }
 
-    let expr = PrattParser::parse_expr(parser, Precedence::Lowest).unwrap();
+    let expr = PrattParser::parse_expr(parser, Precedence::Lowest, Some(r#type)).unwrap();
 
     parser.pos += 1;
 

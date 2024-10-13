@@ -80,13 +80,13 @@ impl Lexer {
         space / 4
     }
 
-    fn read_number(&mut self) -> i32 {
-        let mut result: i32 = 0;
+    fn read_number(&mut self) -> i128 {
+        let mut result: i128 = 0;
 
         while self.pos < self.source[self.line].len() {
             if self.source[self.line][self.pos].is_ascii_digit() {
                 result *= 10;
-                result += self.source[self.line][self.pos].to_digit(10).unwrap() as i32;
+                result += self.source[self.line][self.pos].to_digit(10).unwrap() as i128;
                 self.pos += 1;
             } else {
                 break;

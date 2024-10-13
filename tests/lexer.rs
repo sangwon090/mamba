@@ -20,7 +20,7 @@ fn test_lexer() {
     assert_eq!(tokens[2], Token::Colon);
     assert_eq!(tokens[3], Token::Keyword(Keyword::DataType(DataType::SignedInteger(SignedInteger::i32))));
     assert_eq!(tokens[4], Token::Equal);
-    assert_eq!(tokens[5], Token::Literal(Literal::Integer(123)));
+    assert_eq!(tokens[5], Token::Literal(Literal::SignedInteger((123, SignedInteger::i32))));
     assert_eq!(tokens[6], Token::Semicolon);
     assert_eq!(tokens[7], Token::Keyword(Keyword::Def));
     assert_eq!(tokens[8], Token::Identifier("sum".into()));
