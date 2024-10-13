@@ -1,7 +1,7 @@
 use crate::parser::{Expression, Operator};
 use crate::error::IRGenError;
 use crate::codegen::llvm::*;
-use crate::types::{DataType, SignedInteger};
+use crate::types::DataType;
 
 pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, expr: &Expression) -> Result<(String, String, DataType), IRGenError> {
     let mut result = String::new();
@@ -48,9 +48,11 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
             (format!("%{idx}"), dtype)
         },
         Expression::FnCall(expr) => {
-            if !global_ctx.fn_decl.contains_key(&expr.ident.to_string()) {
+            let fn_dtype = if global_ctx.fn_decl.contains_key(&expr.ident) {
+                global_ctx.fn_decl[&expr.ident].1
+            } else {
                 panic!("Unable to find function `{}`", &expr.ident.to_string());
-            }
+            };
             
             let params = expr.args.iter().map(|expr| {
                 let (code, idx, dtype) = generate_expr(global_ctx, scoped_ctx, expr).unwrap();
@@ -60,11 +62,11 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
 
             let idx = global_ctx.get_label();
 
-            result += &format!("%{} = call i32 @{}(", idx, &expr.ident.to_string());
+            result += &format!("%{} = call {} @{}(", idx, fn_dtype.to_mnemonic(), &expr.ident.to_string());
             result += &params.join(", ");
             result += ")\n";
 
-            let dtype = global_ctx.fn_decl[&expr.ident].0;
+            let dtype = global_ctx.fn_decl[&expr.ident].1;
 
             (format!("%{idx}"), dtype)
         },
@@ -73,7 +75,8 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
             result += &literal_code;
 
             let dtype = match literal {
-                Literal::Integer(_) => DataType::SignedInteger(SignedInteger::i32),
+                Literal::SignedInteger((_, dtype)) => DataType::SignedInteger(*dtype),
+                Literal::UnsignedInteger((_, dtype)) => DataType::UnsignedInteger(*dtype),
                 Literal::String(_) => DataType::str,
             };
 
@@ -84,7 +87,8 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
                 let literal = &scoped_ctx.local_var[ident];
                 
                 let dtype = match literal {
-                    Literal::Integer(_) =>DataType::SignedInteger(SignedInteger::i32),
+                    Literal::SignedInteger((_, dtype)) => DataType::SignedInteger(*dtype),
+                    Literal::UnsignedInteger((_, dtype)) => DataType::UnsignedInteger(*dtype),
                     Literal::String(_) => DataType::str,
                 };
 
@@ -93,7 +97,8 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
                 let literal = &global_ctx.global_var[ident];
                 
                 let dtype = match literal {
-                    Literal::Integer(_) => DataType::SignedInteger(SignedInteger::i32),
+                    Literal::SignedInteger((_, dtype)) => DataType::SignedInteger(*dtype),
+                    Literal::UnsignedInteger((_, dtype)) => DataType::UnsignedInteger(*dtype),
                     Literal::String(_) => DataType::str,
                 };
                 

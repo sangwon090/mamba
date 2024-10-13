@@ -1,6 +1,6 @@
 use crate::parser::{Parser, Expression, ParseError, Operator};
 use crate::lexer::{Literal, Token};
-use crate::types::{DataType, SignedInteger};
+use crate::types::{DataType, SignedInteger, UnsignedInteger};
 
 use super::expression::*;
 
@@ -85,8 +85,10 @@ impl PrattParser {
             Token::Identifier(ident) => Some(Expression::Identifier(ident)),
             Token::Literal(literal) => {
                 match literal {
-                    Literal::Integer(n) => Some(Expression::Literal((literal, DataType::SignedInteger(SignedInteger::i32)))),
+                    Literal::SignedInteger(n) => Some(Expression::Literal((literal, DataType::SignedInteger(SignedInteger::i32)))),
+                    Literal::UnsignedInteger(n) => Some(Expression::Literal((literal, DataType::UnsignedInteger(UnsignedInteger::u32)))),
                     Literal::String(s) => Some(Expression::Literal((Literal::String(s), DataType::str))),
+                    // TODO: Unsigned Integer with 'u' suffix
                 }
             },
             Token::LParen => {

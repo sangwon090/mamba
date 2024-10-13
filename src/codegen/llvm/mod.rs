@@ -16,7 +16,7 @@ pub struct IRGen {
 #[derive(Default)]
 pub struct GlobalContext {
     global_var: HashMap<String, Literal>,
-    fn_decl: HashMap<String, (DataType, Vec<String>)>,
+    fn_decl: HashMap<String, (Vec<String>, DataType)>,
     label_idx: u64,
 }
 
@@ -74,7 +74,11 @@ impl IRGen {
         
         if let Expression::Literal((literal, _)) = &stmt.expr {
             match literal {
-                Literal::Integer(n) => {
+                Literal::SignedInteger((n, dtype)) => {
+                    global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
+                    result += &format!("@{} = global i32 {}\n", stmt.ident.clone(), n);
+                },
+                Literal::UnsignedInteger((n, dtype)) => {
                     global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
                     result += &format!("@{} = global i32 {}\n", stmt.ident.clone(), n);
                 },
@@ -98,7 +102,7 @@ impl IRGen {
         
         result += &stmt.params.iter()
         .map(|(ident, dtype)| {
-                scoped_ctx.local_var.insert(ident.to_string(), Literal::Integer(0));
+                scoped_ctx.local_var.insert(ident.to_string(), Literal::SignedInteger((0, SignedInteger::i32)));
                 format!("{} %{}", dtype.to_mnemonic(), ident)
             })
             .collect::<Vec<String>>()
@@ -106,7 +110,7 @@ impl IRGen {
 
         result += ") {\n";
 
-        global_ctx.fn_decl.insert(stmt.name.to_string(), (stmt.r#type, stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>()));
+        global_ctx.fn_decl.insert(stmt.name.to_string(), (stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>(), stmt.r#type));
 
         // add statements
         result += &stmt.stmts.iter()
@@ -169,7 +173,7 @@ impl IRGen {
         let mut result = String::new();
 
         let (idx, dtype) = match literal {
-            Literal::Integer(n) => {
+            Literal::SignedInteger((n, dtype)) => {
                 let ptr_idx = global_ctx.get_label();
                 let ret_idx = global_ctx.get_label();
     
@@ -179,6 +183,16 @@ impl IRGen {
                 
                 (ret_idx, DataType::SignedInteger(SignedInteger::i32))
             },
+            Literal::UnsignedInteger((n, dtype)) => {
+                let ptr_idx = global_ctx.get_label();
+                let ret_idx = global_ctx.get_label();
+    
+                result += &format!("%{} = alloca u32, align 4\n", ptr_idx);
+                result += &format!("store u32 {}, ptr %{}, align 4\n", n, ptr_idx);
+                result += &format!("%{} = load u32, ptr %{}, align 4\n", ret_idx, ptr_idx);
+                
+                (ret_idx, DataType::SignedInteger(SignedInteger::i32))
+            }
             Literal::String(s) => {
                 let ptr_idx = global_ctx.get_label();
                 let ret_idx = global_ctx.get_label();
@@ -195,7 +209,7 @@ impl IRGen {
     fn generate_extern(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &ExternStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
-        global_ctx.fn_decl.insert(stmt.name.to_string(), (stmt.r#type, stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>()));
+        global_ctx.fn_decl.insert(stmt.name.to_string(), (stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>(), stmt.r#type));
         result += &format!("declare {} @{}({}) nounwind\n", stmt.r#type.to_mnemonic(), stmt.name, stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>().join(", "));
 
         Ok(result)

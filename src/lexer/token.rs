@@ -1,4 +1,4 @@
-use crate::{parser::Identifier, types::DataType};
+use crate::{parser::Identifier, types::{DataType, SignedInteger, UnsignedInteger}};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
@@ -75,6 +75,7 @@ pub enum Keyword {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Literal {
-    Integer(i32),
-    String(String),
+    SignedInteger((i128, SignedInteger)),
+    UnsignedInteger((u128, UnsignedInteger)),
+    String(String), 
 }
