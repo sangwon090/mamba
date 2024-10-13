@@ -54,6 +54,10 @@ impl Parser {
                         self.pos += 1;
                         Some(Statement::Return(parse_return(self).unwrap()))
                     },
+                    Keyword::Extern => {
+                        self.pos += 1;
+                        Some(Statement::Extern(parse_extern(self).unwrap()))
+                    }
                     _ => {
                         self.pos += 1;
                         return Err(ParseError(format!("[Parser::parse_stmt] unexpected keyword {:?}", keyword)));

@@ -1,6 +1,7 @@
 
 pub use def::{DefStatement, parse_def};
 pub use expr_stmt::{ExpressionStatement, parse_expr_stmt};
+pub use r#extern::{ExternStatement, parse_extern};
 pub use r#if::{IfStatement, parse_if};
 pub use r#let::{LetStatement, parse_let};
 pub use r#return::{ReturnStatement, parse_return};
@@ -9,6 +10,7 @@ use std::fmt;
 
 mod def;
 mod expr_stmt;
+mod r#extern;
 mod r#if;
 mod r#let;
 mod r#return;
@@ -19,6 +21,7 @@ pub enum Statement {
     If(IfStatement),
     Let(LetStatement),
     Return(ReturnStatement),
+    Extern(ExternStatement),
 }
 
 impl fmt::Display for Statement {
@@ -29,6 +32,7 @@ impl fmt::Display for Statement {
             Statement::If(stmt) => write!(f, "{}", stmt),
             Statement::Let(stmt) => write!(f, "{}", stmt),
             Statement::Return(stmt) => write!(f, "{}", stmt),
+            Statement::Extern(stmt) => write!(f, "{}", stmt),
         }
     }
 }

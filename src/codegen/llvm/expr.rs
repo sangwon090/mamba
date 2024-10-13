@@ -26,14 +26,14 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
             match expr.operator {
                 Operator::Equal | Operator::NotEqual |
                 Operator::Less | Operator::LessEqual |
-                Operator::Greater | Operator::GreaterEqual => result += &format!("%{} = icmp {} i64 %{}, %{}\n", idx, expr.operator.to_mnemonic(), left_idx, right_idx),
-                Operator::Plus => result += &format!("%{} = add nsw i64 %{}, %{}\n", idx, left_idx, right_idx),
-                Operator::Minus => result += &format!("%{} = sub nsw i64 %{}, %{}\n", idx, left_idx, right_idx),
-                Operator::Multiply => result += &format!("%{} = mul nsw i64 %{}, %{}\n", idx, left_idx, right_idx),
-                Operator::Divide => result += &format!("%{} = sdiv i64 %{}, %{}\n", idx, left_idx, right_idx),
-                Operator::Modulo => result += &format!("%{} = srem i64 %{}, %{}\n", idx, left_idx, right_idx),
-                Operator::LeftShift => result += &format!("%{} = shl i64 %{}, %{}\n", idx, left_idx, right_idx),
-                Operator::RightShift => result += &format!("%{} = ashr i64 %{}, %{}\n", idx, left_idx, right_idx),
+                Operator::Greater | Operator::GreaterEqual => result += &format!("%{} = icmp {} i32 %{}, %{}\n", idx, expr.operator.to_mnemonic(), left_idx, right_idx),
+                Operator::Plus => result += &format!("%{} = add nsw i32 %{}, %{}\n", idx, left_idx, right_idx),
+                Operator::Minus => result += &format!("%{} = sub nsw i32 %{}, %{}\n", idx, left_idx, right_idx),
+                Operator::Multiply => result += &format!("%{} = mul nsw i32 %{}, %{}\n", idx, left_idx, right_idx),
+                Operator::Divide => result += &format!("%{} = sdiv i32 %{}, %{}\n", idx, left_idx, right_idx),
+                Operator::Modulo => result += &format!("%{} = srem i32 %{}, %{}\n", idx, left_idx, right_idx),
+                Operator::LeftShift => result += &format!("%{} = shl i32 %{}, %{}\n", idx, left_idx, right_idx),
+                Operator::RightShift => result += &format!("%{} = ashr i32 %{}, %{}\n", idx, left_idx, right_idx),
 
                 _ => panic!("{} cannot be infix expression!", expr),
             };
@@ -48,11 +48,11 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
             let params = expr.args.iter().map(|expr| {
                 let (code, idx) = generate_expr(global_ctx, scoped_ctx, expr).unwrap();
                 result += &code;
-                format!("i64 %{}", idx)
+                format!("i32 %{}", idx)
             }).collect::<Vec<String>>();
 
             let idx = global_ctx.get_label();
-            result += &format!("%{} = call i64 @{}(", idx, &expr.ident.to_string());
+            result += &format!("%{} = call i32 @{}(", idx, &expr.ident.to_string());
             result += &params.join(", ");
             result += ")\n";
 

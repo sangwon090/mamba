@@ -75,5 +75,6 @@ fn main() {
             .unwrap();
 
         eprintln!("{}", String::from_utf8(output.stdout).unwrap());
+        eprintln!("mamba program exit with {}", output.status);
     }
 }

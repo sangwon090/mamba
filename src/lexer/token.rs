@@ -72,10 +72,11 @@ pub enum Keyword {
     Str,
     Void,
     Return,
+    Extern,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Literal {
-    Integer(i64),
+    Integer(i32),
     String(String),
 }

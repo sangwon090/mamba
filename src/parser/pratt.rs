@@ -207,7 +207,6 @@ impl PrattParser {
 
         if let Some(token) = parser.next(0) {
             if let Token::RParen = token {
-                parser.pos += 1;
                 return Ok(FnCallExpression {
                     ident,
                     args,

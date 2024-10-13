@@ -2,7 +2,7 @@ pub mod expr;
 
 use std::collections::HashMap;
 
-use crate::parser::{DefStatement, Expression, IfStatement, LetStatement, ReturnStatement, Statement, AST};
+use crate::parser::{DefStatement, Expression, ExternStatement, IfStatement, LetStatement, ReturnStatement, Statement, AST};
 use crate::lexer::Literal;
 use crate::error::IRGenError;
 pub use expr::generate_expr;
@@ -21,7 +21,7 @@ pub struct GlobalContext {
 
 #[derive(Default)]
 pub struct ScopedContext {
-    local_var: HashMap<String, i64>,
+    local_var: HashMap<String, i32>,
 }
 
 impl GlobalContext {
@@ -62,6 +62,7 @@ impl IRGen {
             Statement::If(stmt) => result += &IRGen::generate_if(global_ctx, scoped_ctx, stmt).unwrap(),
             Statement::Return(stmt) => result += &IRGen::generate_ret(global_ctx, scoped_ctx, stmt).unwrap(),
             Statement::Expression(_stmt) => todo!(),
+            Statement::Extern(stmt) => result += &IRGen::generate_extern(global_ctx, scoped_ctx, stmt).unwrap(),
         }
 
         Ok(result)
@@ -74,7 +75,7 @@ impl IRGen {
             match literal {
                 Literal::Integer(n) => {
                     global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
-                    result += &format!("@{} = global i64 {}\n", stmt.ident.clone(), *n);
+                    result += &format!("@{} = global i32 {}\n", stmt.ident.clone(), *n);
                 },
                 Literal::String(s) => {
                     global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
@@ -92,7 +93,7 @@ impl IRGen {
     fn generate_def(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &DefStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
-        result += &format!("define i64 @{}(", stmt.name);
+        result += &format!("define i32 @{}(", stmt.name);
         
         result += &stmt.params.iter()
         .map(|(ident, dtype)| {
@@ -154,10 +155,10 @@ impl IRGen {
         
         if expr_idx.is_empty() {
             result += &expr_code;
-            result += "ret i64 0\n";
+            result += "ret i32 0\n";
         } else {
             result += &expr_code;
-            result += &format!("ret i64 %{}\n", expr_idx);
+            result += &format!("ret i32 %{}\n", expr_idx);
         }
 
         Ok(result)
@@ -170,9 +171,9 @@ impl IRGen {
             let ptr_idx = global_ctx.get_label();
             let ret_idx = global_ctx.get_label();
 
-            result += &format!("%{} = alloca i64, align 4\n", ptr_idx);
-            result += &format!("store i64 {}, ptr %{}, align 4\n", n, ptr_idx);
-            result += &format!("%{} = load i64, ptr %{}, align 4\n", ret_idx, ptr_idx);
+            result += &format!("%{} = alloca i32, align 4\n", ptr_idx);
+            result += &format!("store i32 {}, ptr %{}, align 4\n", n, ptr_idx);
+            result += &format!("%{} = load i32, ptr %{}, align 4\n", ret_idx, ptr_idx);
             
             ret_idx
         } else {
@@ -180,5 +181,14 @@ impl IRGen {
         };
 
         Ok((result, idx))
+    }
+
+    fn generate_extern(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &ExternStatement) -> Result<String, IRGenError> {
+        let mut result = String::new();
+
+        global_ctx.fn_decl.insert(stmt.name.to_string(), stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>());
+        result += &format!("declare {} @{}({}) nounwind\n", stmt.r#type.to_mnemonic(), stmt.name, stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>().join(", "));
+
+        Ok(result)
     }
 }

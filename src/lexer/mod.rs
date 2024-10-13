@@ -35,6 +35,7 @@ impl Lexer {
         match ident {
             "if" => Token::Keyword(Keyword::If),
             "else" => Token::Keyword(Keyword::Else),
+            "extern" => Token::Keyword(Keyword::Extern),
             "def" => Token::Keyword(Keyword::Def),
             "let" => Token::Keyword(Keyword::Let),
             "int" => Token::Keyword(Keyword::Int),
@@ -64,13 +65,13 @@ impl Lexer {
         space / 4
     }
 
-    fn read_number(&mut self) -> i64 {
-        let mut result: i64 = 0;
+    fn read_number(&mut self) -> i32 {
+        let mut result: i32 = 0;
 
         while self.pos < self.source[self.line].len() {
             if self.source[self.line][self.pos].is_ascii_digit() {
                 result *= 10;
-                result += self.source[self.line][self.pos].to_digit(10).unwrap() as i64;
+                result += self.source[self.line][self.pos].to_digit(10).unwrap() as i32;
                 self.pos += 1;
             } else {
                 break;

@@ -43,7 +43,7 @@ pub enum FloatingPoint {
 impl From<Keyword> for DataType {
     fn from(value: Keyword) -> Self {
         match value {
-            Keyword::Int => DataType::SignedInteger(SignedInteger::i64),
+            Keyword::Int => DataType::SignedInteger(SignedInteger::i32),
             Keyword::Str => DataType::str,
             Keyword::Void => DataType::void,
             _ => panic!("Cannot convert {:?} into DataType!", value),
