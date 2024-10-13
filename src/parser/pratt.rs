@@ -1,5 +1,6 @@
 use crate::parser::{Parser, Expression, ParseError, Operator};
-use crate::lexer::Token;
+use crate::lexer::{Literal, Token};
+use crate::types::{DataType, SignedInteger};
 
 use super::expression::*;
 
@@ -76,12 +77,18 @@ impl PrattParser {
         })
     }
 
+    // TODO: Support various types
     pub fn parse_expr(parser: &mut Parser, precedence: Precedence) -> Result<Expression, ParseError> {
         let token = parser.next(0).unwrap();
 
         let prefix: Option<Expression> = match token.clone() {
             Token::Identifier(ident) => Some(Expression::Identifier(ident)),
-            Token::Literal(literal) => Some(Expression::Literal(literal)),
+            Token::Literal(literal) => {
+                match literal {
+                    Literal::Integer(n) => Some(Expression::Literal((literal, DataType::SignedInteger(SignedInteger::i32)))),
+                    Literal::String(s) => Some(Expression::Literal((Literal::String(s), DataType::str))),
+                }
+            },
             Token::LParen => {
                 parser.pos += 1;
 
@@ -163,7 +170,7 @@ impl PrattParser {
             operator,
             right: Box::new(right),
         };
-
+        
         Ok(Expression::Prefix(prefix_expr))
     }
 

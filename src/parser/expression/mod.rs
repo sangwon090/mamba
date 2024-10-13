@@ -1,13 +1,13 @@
 use std::fmt;
-use crate::lexer::Literal;
+use crate::{lexer::Literal, types::DataType};
 
 #[derive(Debug)]
 pub enum Expression {
-    Prefix(PrefixExpression),
-    Infix(InfixExpression),
-    FnCall(FnCallExpression),
-    Identifier(Identifier),
-    Literal(Literal),
+    Prefix(PrefixExpression), // TODO: Add DataType
+    Infix(InfixExpression), // TODO: Add DataType
+    FnCall(FnCallExpression), // TODO: Add DataType
+    Identifier(Identifier), // TODO: Add DataType
+    Literal((Literal, DataType)),
 }
 
 #[derive(Debug)]

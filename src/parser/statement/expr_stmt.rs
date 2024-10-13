@@ -2,7 +2,7 @@ use crate::{error::ParseError, lexer::Token, parser::{pratt::{PrattParser, Prece
 use std::fmt;
 
 pub struct ExpressionStatement {
-    expr: Expression,
+    pub expr: Expression,
 }
 
 pub fn parse_expr_stmt(parser: &mut Parser) -> Result<ExpressionStatement, ParseError> {

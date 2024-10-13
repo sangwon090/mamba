@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use crate::parser::{DefStatement, Expression, ExternStatement, IfStatement, LetStatement, ReturnStatement, Statement, AST};
 use crate::lexer::Literal;
 use crate::error::IRGenError;
+use crate::types::{DataType, SignedInteger};
 pub use expr::generate_expr;
 
 pub struct IRGen {
@@ -15,13 +16,13 @@ pub struct IRGen {
 #[derive(Default)]
 pub struct GlobalContext {
     global_var: HashMap<String, Literal>,
-    fn_decl: HashMap<String, Vec<String>>,
+    fn_decl: HashMap<String, (DataType, Vec<String>)>,
     label_idx: u64,
 }
 
 #[derive(Default)]
 pub struct ScopedContext {
-    local_var: HashMap<String, i32>,
+    local_var: HashMap<String, Literal>,
 }
 
 impl GlobalContext {
@@ -61,7 +62,7 @@ impl IRGen {
             Statement::Def(stmt) => result += &IRGen::generate_def(global_ctx, scoped_ctx, stmt).unwrap(),
             Statement::If(stmt) => result += &IRGen::generate_if(global_ctx, scoped_ctx, stmt).unwrap(),
             Statement::Return(stmt) => result += &IRGen::generate_ret(global_ctx, scoped_ctx, stmt).unwrap(),
-            Statement::Expression(_stmt) => todo!(),
+            Statement::Expression(stmt) => result += &generate_expr(global_ctx, scoped_ctx, &stmt.expr).unwrap().0,
             Statement::Extern(stmt) => result += &IRGen::generate_extern(global_ctx, scoped_ctx, stmt).unwrap(),
         }
 
@@ -71,11 +72,11 @@ impl IRGen {
     fn generate_global_variable(global_ctx: &mut GlobalContext, _scoped_ctx: &mut ScopedContext, stmt: &LetStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
         
-        if let Expression::Literal(literal) = &stmt.expr {
+        if let Expression::Literal((literal, _)) = &stmt.expr {
             match literal {
                 Literal::Integer(n) => {
                     global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
-                    result += &format!("@{} = global i32 {}\n", stmt.ident.clone(), *n);
+                    result += &format!("@{} = global i32 {}\n", stmt.ident.clone(), n);
                 },
                 Literal::String(s) => {
                     global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
@@ -97,7 +98,7 @@ impl IRGen {
         
         result += &stmt.params.iter()
         .map(|(ident, dtype)| {
-                scoped_ctx.local_var.insert(ident.to_string(), 0);
+                scoped_ctx.local_var.insert(ident.to_string(), Literal::Integer(0));
                 format!("{} %{}", dtype.to_mnemonic(), ident)
             })
             .collect::<Vec<String>>()
@@ -105,7 +106,7 @@ impl IRGen {
 
         result += ") {\n";
 
-        global_ctx.fn_decl.insert(stmt.name.to_string(), stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>());
+        global_ctx.fn_decl.insert(stmt.name.to_string(), (stmt.r#type, stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>()));
 
         // add statements
         result += &stmt.stmts.iter()
@@ -126,9 +127,9 @@ impl IRGen {
         //let cont_idx = global_ctx.get_label();
 
         // process condition
-        let (expr_code, expr_idx) = generate_expr(global_ctx, scoped_ctx, &stmt.condition).unwrap();
+        let (expr_code, expr_idx, expr_dtype) = generate_expr(global_ctx, scoped_ctx, &stmt.condition).unwrap();
         result += &expr_code;
-        result += &format!("br i1 %{}, label %l{}, label %l{}\n", expr_idx, then_idx, else_idx);
+        result += &format!("br i1 {}, label %l{}, label %l{}\n", expr_idx, then_idx, else_idx);
         
         // process then
         result += &format!("l{}:\n", then_idx);
@@ -151,14 +152,14 @@ impl IRGen {
     fn generate_ret(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &ReturnStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
-        let (expr_code, expr_idx) = generate_expr(global_ctx, scoped_ctx, &stmt.expr).unwrap();
+        let (code, idx, dtype) = generate_expr(global_ctx, scoped_ctx, &stmt.expr).unwrap();
         
-        if expr_idx.is_empty() {
-            result += &expr_code;
+        if idx.is_empty() {
+            result += &code;
             result += "ret i32 0\n";
         } else {
-            result += &expr_code;
-            result += &format!("ret i32 %{}\n", expr_idx);
+            result += &code;
+            result += &format!("ret i32 {}\n", idx);
         }
 
         Ok(result)
@@ -167,17 +168,25 @@ impl IRGen {
     fn generate_literal(global_ctx: &mut GlobalContext, _scoped_ctx: &mut ScopedContext, literal: &Literal) -> Result<(String, u64), IRGenError> {
         let mut result = String::new();
 
-        let idx = if let Literal::Integer(n) = literal {
-            let ptr_idx = global_ctx.get_label();
-            let ret_idx = global_ctx.get_label();
+        let (idx, dtype) = match literal {
+            Literal::Integer(n) => {
+                let ptr_idx = global_ctx.get_label();
+                let ret_idx = global_ctx.get_label();
+    
+                result += &format!("%{} = alloca i32, align 4\n", ptr_idx);
+                result += &format!("store i32 {}, ptr %{}, align 4\n", n, ptr_idx);
+                result += &format!("%{} = load i32, ptr %{}, align 4\n", ret_idx, ptr_idx);
+                
+                (ret_idx, DataType::SignedInteger(SignedInteger::i32))
+            },
+            Literal::String(s) => {
+                let ptr_idx = global_ctx.get_label();
+                let ret_idx = global_ctx.get_label();
+                result += &format!("%{} = alloca [{} x i8], align 4\n", ptr_idx, s.len() + 1);
+                result += &format!("store [{} x i8] c\"{}\\00\", ptr %{}, align 4\n", s.len() + 1, s, ptr_idx);
 
-            result += &format!("%{} = alloca i32, align 4\n", ptr_idx);
-            result += &format!("store i32 {}, ptr %{}, align 4\n", n, ptr_idx);
-            result += &format!("%{} = load i32, ptr %{}, align 4\n", ret_idx, ptr_idx);
-            
-            ret_idx
-        } else {
-            panic!("`{:?}` not supported for literal", literal);
+                (ptr_idx, DataType::str)
+            }
         };
 
         Ok((result, idx))
@@ -186,7 +195,7 @@ impl IRGen {
     fn generate_extern(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &ExternStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
-        global_ctx.fn_decl.insert(stmt.name.to_string(), stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>());
+        global_ctx.fn_decl.insert(stmt.name.to_string(), (stmt.r#type, stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>()));
         result += &format!("declare {} @{}({}) nounwind\n", stmt.r#type.to_mnemonic(), stmt.name, stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>().join(", "));
 
         Ok(result)

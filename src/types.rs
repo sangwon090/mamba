@@ -1,6 +1,6 @@
 use crate::lexer::Keyword;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 #[allow(non_camel_case_types)]
 pub enum DataType {
     void,
@@ -12,7 +12,7 @@ pub enum DataType {
     FloatingPoint(FloatingPoint),
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 #[allow(non_camel_case_types)]
 pub enum SignedInteger {
     i8,
@@ -22,7 +22,7 @@ pub enum SignedInteger {
     i128,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 #[allow(non_camel_case_types)]
 pub enum UnsignedInteger {
     u8,
@@ -32,7 +32,7 @@ pub enum UnsignedInteger {
     u128,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 #[allow(non_camel_case_types)]
 pub enum FloatingPoint {
     f32,

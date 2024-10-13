@@ -1,8 +1,10 @@
 let a: int = 2;
 let b: int = 5;
 let c: int = -(3 - (a * b));
-let d: str = "Hi!";
+let d: str = "It works on my machine :)";
 
+extern puts(text: str) -> int;
+extern fflush(buffer: int) -> int;
 extern clock() -> int;
 
 def fibo(n: int) -> int:
@@ -15,4 +17,7 @@ def fibo(n: int) -> int:
             return fibo(n - 2) + fibo(n - 1);
 
 def main() -> int:
+    puts("Hello, world!");
+    puts(d);
+    fflush(0);
     return clock();
