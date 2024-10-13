@@ -2,7 +2,7 @@ mod token;
 pub use token::{Token, Keyword, Literal};
 
 use std::cmp::Ordering;
-use crate::error::LexerError;
+use crate::{error::LexerError, types::{DataType, FloatingPoint, SignedInteger, UnsignedInteger}};
 
 pub struct Lexer {
     source: Vec<Vec<char>>,
@@ -38,10 +38,25 @@ impl Lexer {
             "extern" => Token::Keyword(Keyword::Extern),
             "def" => Token::Keyword(Keyword::Def),
             "let" => Token::Keyword(Keyword::Let),
-            "int" => Token::Keyword(Keyword::Int),
-            "str" => Token::Keyword(Keyword::Str),
-            "void" => Token::Keyword(Keyword::Void),
             "return" => Token::Keyword(Keyword::Return),
+
+            "void" => Token::Keyword(Keyword::DataType(DataType::void)),
+            "bool" => Token::Keyword(Keyword::DataType(DataType::bool)),
+            "str" => Token::Keyword(Keyword::DataType(DataType::str)),
+            "i8" => Token::Keyword(Keyword::DataType(DataType::SignedInteger(SignedInteger::i8))),
+            "i16" => Token::Keyword(Keyword::DataType(DataType::SignedInteger(SignedInteger::i16))),
+            "i32" => Token::Keyword(Keyword::DataType(DataType::SignedInteger(SignedInteger::i32))),
+            "i64" => Token::Keyword(Keyword::DataType(DataType::SignedInteger(SignedInteger::i64))),
+            "i128" => Token::Keyword(Keyword::DataType(DataType::SignedInteger(SignedInteger::i128))),
+            "u8" => Token::Keyword(Keyword::DataType(DataType::UnsignedInteger(UnsignedInteger::u8))),
+            "u16" => Token::Keyword(Keyword::DataType(DataType::UnsignedInteger(UnsignedInteger::u16))),
+            "u32" => Token::Keyword(Keyword::DataType(DataType::UnsignedInteger(UnsignedInteger::u32))),
+            "u64" => Token::Keyword(Keyword::DataType(DataType::UnsignedInteger(UnsignedInteger::u64))),
+            "u128" => Token::Keyword(Keyword::DataType(DataType::UnsignedInteger(UnsignedInteger::u128))),
+            "f32" => Token::Keyword(Keyword::DataType(DataType::FloatingPoint(FloatingPoint::f32))),
+            "f64" => Token::Keyword(Keyword::DataType(DataType::FloatingPoint(FloatingPoint::f64))),
+            "f128" => Token::Keyword(Keyword::DataType(DataType::FloatingPoint(FloatingPoint::f128))),
+
             _ => Token::Identifier(ident.into()),
         }
     }

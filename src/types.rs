@@ -40,17 +40,6 @@ pub enum FloatingPoint {
     f128,
 }
 
-impl From<Keyword> for DataType {
-    fn from(value: Keyword) -> Self {
-        match value {
-            Keyword::Int => DataType::SignedInteger(SignedInteger::i32),
-            Keyword::Str => DataType::str,
-            Keyword::Void => DataType::void,
-            _ => panic!("Cannot convert {:?} into DataType!", value),
-        }
-    }
-}
-
 impl DataType {
     pub fn to_mnemonic(&self) -> &'static str {
         match &self {

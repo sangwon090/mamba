@@ -1,4 +1,5 @@
 use std::fmt;
+use crate::lexer::Keyword;
 use crate::parser::{Parser, Token, Identifier, Statement};
 use crate::error::ParseError;
 use crate::types::DataType;
@@ -63,8 +64,8 @@ pub fn parse_def(parser: &mut Parser) -> Result<DefStatement, ParseError> {
         let r#type = if let Some(token) = parser.next(0) {
             parser.pos += 1;
 
-            if let Token::Keyword(keyword) = token {
-                keyword.into()
+            if let Token::Keyword(Keyword::DataType(dtype)) = token {
+                dtype
             } else {
                 return Err(ParseError(format!("[DefStatement] expected keyword, found {token:?}")));
             }
@@ -106,10 +107,10 @@ pub fn parse_def(parser: &mut Parser) -> Result<DefStatement, ParseError> {
     let r#type = if let Some(token) = parser.next(0) {
         parser.pos += 1;
 
-        if let Token::Keyword(keyword) = token {
-            keyword.into()
+        if let Token::Keyword(Keyword::DataType(dtype)) = token {
+            dtype
         } else {
-            return Err(ParseError(format!("[DefStatement] expected keyword, found {token:?}")));
+            return Err(ParseError(format!("[DefStatement] expected keyword(data type), found {token:?}")));
         }
     } else {
         return Err(ParseError("[DefStatement] insufficient tokens".into()));

@@ -1,4 +1,4 @@
-use crate::parser::Identifier;
+use crate::{parser::Identifier, types::DataType};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
@@ -68,11 +68,9 @@ pub enum Keyword {
     Else,
     Let,
     Def,
-    Int,
-    Str,
-    Void,
     Return,
     Extern,
+    DataType(DataType),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

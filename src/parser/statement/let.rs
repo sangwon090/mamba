@@ -1,3 +1,4 @@
+use crate::lexer::Keyword;
 use crate::parser::{Expression, Identifier, Parser, PrattParser, Token};
 use crate::error::ParseError;
 use crate::types::DataType;
@@ -34,8 +35,8 @@ pub fn parse_let(parser: &mut Parser) -> Result<LetStatement, ParseError> {
     let r#type = if let Some(token) = parser.next(0) {
         parser.pos += 1;
 
-        if let Token::Keyword(keyword) = token {
-            keyword.into()
+        if let Token::Keyword(Keyword::DataType(dtype)) = token {
+            dtype
         } else {
             return Err(ParseError(format!("[LetStatement] expected keyword, found {token:?}")));
         }

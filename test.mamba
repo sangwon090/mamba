@@ -1,13 +1,13 @@
-let a: int = 2;
-let b: int = 5;
-let c: int = -(3 - (a * b));
+let a: i32 = 2;
+let b: i32 = 5;
+let c: i32 = -(3 - (a * b));
 let d: str = "It works on my machine :)";
 
-extern puts(text: str) -> int;
-extern fflush(buffer: int) -> int;
-extern clock() -> int;
+extern puts(text: str) -> i32;
+extern fflush(buffer: i32) -> i32;
+extern clock() -> i32;
 
-def fibo(n: int) -> int:
+def fibo(n: i32) -> i32:
     if n <= 0:
         return 0;
     else:
@@ -16,7 +16,7 @@ def fibo(n: int) -> int:
         else:
             return fibo(n - 2) + fibo(n - 1);
 
-def main() -> int:
+def main() -> i32:
     puts("Hello, world!");
     puts(d);
     fflush(0);

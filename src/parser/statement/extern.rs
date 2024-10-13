@@ -1,4 +1,5 @@
 use std::fmt;
+use crate::lexer::Keyword;
 use crate::parser::{Parser, Token, Identifier, Statement};
 use crate::error::ParseError;
 use crate::types::DataType;
@@ -61,8 +62,8 @@ pub fn parse_extern(parser: &mut Parser) -> Result<ExternStatement, ParseError> 
         let r#type = if let Some(token) = parser.next(0) {
             parser.pos += 1;
 
-            if let Token::Keyword(keyword) = token {
-                keyword.into()
+            if let Token::Keyword(Keyword::DataType(dtype)) = token {
+                dtype
             } else {
                 return Err(ParseError(format!("[ExternStatement] expected keyword, found {token:?}")));
             }
@@ -104,8 +105,8 @@ pub fn parse_extern(parser: &mut Parser) -> Result<ExternStatement, ParseError> 
     let r#type = if let Some(token) = parser.next(0) {
         parser.pos += 1;
 
-        if let Token::Keyword(keyword) = token {
-            keyword.into()
+        if let Token::Keyword(Keyword::DataType(dtype)) = token {
+            dtype
         } else {
             return Err(ParseError(format!("[ExternStatement] expected keyword, found {token:?}")));
         }
