@@ -82,6 +82,7 @@ impl PrattParser {
         let token = parser.next(0).unwrap();
 
         // TODO: refactor
+        // TODO: support type casting
         let prefix: Option<Expression> = match token.clone() {
             Token::Identifier(ident) => Some(Expression::Identifier(ident)),
             Token::Literal(literal) => {

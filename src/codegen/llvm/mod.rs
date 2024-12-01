@@ -1,4 +1,5 @@
 pub mod expr;
+pub mod types;
 
 use std::collections::HashMap;
 
@@ -97,7 +98,7 @@ impl IRGen {
     fn generate_def(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &DefStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
-        result += &format!("define i32 @{}(", stmt.name);
+        result += &format!("define {} @{}(", stmt.r#type.to_mnemonic(), stmt.name);
         
         result += &stmt.params.iter()
         .map(|(ident, dtype)| {
@@ -155,14 +156,14 @@ impl IRGen {
     fn generate_ret(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &ReturnStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
-        let (code, idx, _dtype) = generate_expr(global_ctx, scoped_ctx, &stmt.expr).unwrap();
+        let (code, idx, dtype) = generate_expr(global_ctx, scoped_ctx, &stmt.expr).unwrap();
         
         if idx.is_empty() {
             result += &code;
-            result += "ret i32 0\n";
+            result += "ret\n";
         } else {
             result += &code;
-            result += &format!("ret i32 {}\n", idx);
+            result += &format!("ret {} {}\n", dtype.to_mnemonic(), idx);
         }
 
         Ok(result)
