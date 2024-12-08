@@ -1,7 +1,13 @@
 mod cast;
+mod op;
 
-pub use cast::{Types, cast};
 use crate::types::{DataType, SignedInteger, UnsignedInteger, FloatingPoint};
+
+pub use cast::cast;
+pub use op::{unary_op, infix_op};
+
+const SIGNED_INTEGERS: [SignedInteger; 5] = [SignedInteger::i8, SignedInteger::i16, SignedInteger::i32, SignedInteger::i64, SignedInteger::i128];
+const UNSIGNED_INTEGERS: [UnsignedInteger; 5] = [UnsignedInteger::u8, UnsignedInteger::u16, UnsignedInteger::u32, UnsignedInteger::u64, UnsignedInteger::u128];
 
 impl DataType {
     pub fn to_mnemonic(&self) -> &'static str {

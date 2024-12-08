@@ -1,38 +1,35 @@
-use std::{cell::OnceCell, cmp::max, collections::HashMap, hash::Hash, iter::zip, sync::OnceLock};
+use std::{cmp::max, collections::HashMap, sync::OnceLock};
+use crate::{codegen::llvm::GlobalContext, types::{DataType, SignedInteger, UnsignedInteger}};
+use super::{SIGNED_INTEGERS, UNSIGNED_INTEGERS};
 
-use crate::{parser::Operator, types::{DataType, SignedInteger, UnsignedInteger}};
+type FnTypeCast = dyn Fn(&mut GlobalContext, &str) -> (String, String, DataType) + Send + Sync + 'static;
 
-type FnTypeCast = dyn Fn(&str, &str) -> (String, DataType) + Send + Sync + 'static;
-type FnUnaryOperation = dyn Fn() -> String + Send + 'static;
-type FnInfixOperation = dyn Fn() -> String + Send + 'static;
+static CAST: OnceLock<HashMap<(DataType, DataType), Box<FnTypeCast>>> = OnceLock::new();
 
-static CASTERS: OnceLock<HashMap<(DataType, DataType), Box<FnTypeCast>>> = OnceLock::new();
-const SIGNED_INTEGERS: [SignedInteger; 5] = [SignedInteger::i8, SignedInteger::i16, SignedInteger::i32, SignedInteger::i64, SignedInteger::i128];
-const UNSIGNED_INTEGERS: [UnsignedInteger; 5] = [UnsignedInteger::u8, UnsignedInteger::u16, UnsignedInteger::u32, UnsignedInteger::u64, UnsignedInteger::u128];
-
-pub struct Types {
-    unary_operation: HashMap<(DataType, Operator), Box<FnUnaryOperation>>,
-    infix_operation: HashMap<(DataType, DataType, Operator), Box<FnInfixOperation>>,
-}
-
-macro_rules! add_type_cast {
+macro_rules! add_cast {
     ($hashmap:ident, $from:expr, $to:expr, $fn:expr) => {
         $hashmap.insert(($from, $to), Box::new($fn))
     }
 }
 
 pub fn cast() -> &'static HashMap<(DataType, DataType), Box<FnTypeCast>> {
-    CASTERS.get_or_init(|| {
-        let mut casters: HashMap<(DataType, DataType), Box<FnTypeCast>> = HashMap::new();
+    CAST.get_or_init(|| {
+        let mut cast: HashMap<(DataType, DataType), Box<FnTypeCast>> = HashMap::new();
 
         for a in &SIGNED_INTEGERS {
             for b in &SIGNED_INTEGERS {
                 if a == b {
                     continue;
                 } else if a < b {
-                    add_type_cast!(casters, DataType::SignedInteger(*a), DataType::SignedInteger(*b), |src, dest| { (format!("{} = zext {} {} to {}\n", dest, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::SignedInteger(*a), DataType::SignedInteger(*b))) });
+                    add_cast!(cast, DataType::SignedInteger(*a), DataType::SignedInteger(*b), |ctx, src| {
+                        let idx = &format!("%{}", ctx.get_label());
+                        (idx.into(), format!("{} = zext {} {} to {}\n", idx, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::SignedInteger(*a), DataType::SignedInteger(*b)))
+                    });
                 } else if a > b {
-                    add_type_cast!(casters, DataType::SignedInteger(*a), DataType::SignedInteger(*b), |src, dest| { (format!("{} = trunc {} {} to {}\n", dest, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::SignedInteger(*a), DataType::SignedInteger(*b))) });
+                    add_cast!(cast, DataType::SignedInteger(*a), DataType::SignedInteger(*b), |ctx, src| {
+                        let idx = &format!("%{}", ctx.get_label());
+                        (idx.into(), format!("{} = trunc {} {} to {}\n", idx, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::SignedInteger(*a), DataType::SignedInteger(*b)))
+                    });
                 }
             }
 
@@ -42,54 +39,54 @@ pub fn cast() -> &'static HashMap<(DataType, DataType), Box<FnTypeCast>> {
                 if a == c {
                     continue;
                 } else if a < c {
-                    add_type_cast!(casters, DataType::SignedInteger(*a), DataType::UnsignedInteger(*b), |src, dest| { (format!("{} = zext {} {} to {}\n", dest, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::SignedInteger(*a), DataType::SignedInteger(*c))) });
+                    add_cast!(cast, DataType::SignedInteger(*a), DataType::UnsignedInteger(*b), |ctx, src| {
+                        let idx = &format!("%{}", ctx.get_label());
+                        (idx.into(), format!("{} = zext {} {} to {}\n", idx, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::SignedInteger(*a), DataType::SignedInteger(*c))) });
                 } else if a > c {
-                    add_type_cast!(casters, DataType::SignedInteger(*a), DataType::UnsignedInteger(*b), |src, dest| { (format!("{} = trunc {} {} to {}\n", dest, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::SignedInteger(*a), DataType::SignedInteger(*c))) });
+                    add_cast!(cast, DataType::SignedInteger(*a), DataType::UnsignedInteger(*b), |ctx, src| {
+                        let idx = &format!("%{}", ctx.get_label());
+                        (idx.into(), format!("{} = trunc {} {} to {}\n", idx, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::SignedInteger(*a), DataType::SignedInteger(*c)))
+                    });
                 }
             }
         }
 
         for a in &UNSIGNED_INTEGERS {
             for b in &SIGNED_INTEGERS {
-                // TODO
+                let c: &UnsignedInteger = b.into();
+
+                if a == c {
+                    continue;
+                } else if a < c {
+                    add_cast!(cast, DataType::UnsignedInteger(*a), DataType::SignedInteger(*b), |ctx, src| {
+                        let idx = &format!("%{}", ctx.get_label());
+                        (idx.into(), format!("{} = zext {} {} to {}\n", idx, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::UnsignedInteger(*a), DataType::UnsignedInteger(*c)))
+                    });
+                } else if a > c {
+                    add_cast!(cast, DataType::UnsignedInteger(*a), DataType::SignedInteger(*b), |ctx, src| {
+                        let idx = &format!("%{}", ctx.get_label());
+                        (idx.into(), format!("{} = trunc {} {} to {}\n", idx, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::UnsignedInteger(*a), DataType::UnsignedInteger(*c)))
+                    });
+                }
             }
 
             for b in &UNSIGNED_INTEGERS {
                 if a == b {
                     continue;
                 } else if a < b {
-                    add_type_cast!(casters, DataType::UnsignedInteger(*a), DataType::UnsignedInteger(*b), |src, dest| {
-                        (format!("{} = zext {} {} to {}\n", dest, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::UnsignedInteger(*a), DataType::UnsignedInteger(*b)))
+                    add_cast!(cast, DataType::UnsignedInteger(*a), DataType::UnsignedInteger(*b), |ctx, src| {
+                        let idx = &format!("%{}", ctx.get_label());
+                        (idx.into(), format!("{} = zext {} {} to {}\n", idx, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::UnsignedInteger(*a), DataType::UnsignedInteger(*b)))
                     });
                 } else if a > b {
-                    add_type_cast!(casters, DataType::UnsignedInteger(*a), DataType::UnsignedInteger(*b), |src, dest| {
-                        (format!("{} = trunc {} {} to {}\n", dest, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::UnsignedInteger(*a), DataType::UnsignedInteger(*b)))
+                    add_cast!(cast, DataType::UnsignedInteger(*a), DataType::UnsignedInteger(*b), |ctx, src| {
+                        let idx = &format!("%{}", ctx.get_label());
+                        (idx.into(), format!("{} = trunc {} {} to {}\n", idx, a.to_mnemonic(), src, b.to_mnemonic()), max(DataType::UnsignedInteger(*a), DataType::UnsignedInteger(*b)))
                     });
                 }
             }
         }
 
-        casters
+        cast
     })
-}
-
-impl Types {
-    pub fn new() -> Types {
-        let mut type_cast: HashMap<(DataType, DataType), Box<FnTypeCast>> = HashMap::new();
-        
-
-
-
-
-        let unary_operation: HashMap<(DataType, Operator), Box<FnUnaryOperation>> = HashMap::new();
-
-
-        let infix_operation: HashMap<(DataType, DataType, Operator), Box<FnInfixOperation>> = HashMap::new();
-
-
-        Types {
-            unary_operation,
-            infix_operation,
-        }
-    }
 }

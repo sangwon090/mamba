@@ -190,12 +190,12 @@ impl PrattParser {
 
         let right = PrattParser::parse_expr(parser, Precedence::Unary, None).unwrap();
 
-        let prefix_expr = PrefixExpression {
+        let unary_expr = UnaryExpression {
             operator,
             right: Box::new(right),
         };
         
-        Ok(Expression::Prefix(prefix_expr))
+        Ok(Expression::Unary(unary_expr))
     }
 
     pub fn parse_led(parser: &mut Parser, left: Expression) -> Result<Expression, ParseError> {

@@ -1,4 +1,4 @@
-use types::cast;
+use types::{cast, infix_op, unary_op};
 
 use crate::parser::{Expression, Operator};
 use crate::error::IRGenError;
@@ -9,7 +9,17 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
     let mut result = String::new();
 
     let (idx, dtype) = match expr {
-        Expression::Prefix(_prefix) => todo!(),
+        Expression::Unary(expr) => {
+            let (idx, dtype) = {
+                let (code, idx, dtype) = generate_expr(global_ctx, scoped_ctx, &expr.right).unwrap();
+                result += &code;
+                (idx.to_string(), dtype)
+            };
+
+            let (idx, code) = unary_op()[&(dtype, expr.operator)](global_ctx, &idx);
+            result += &format!("{code}\n");
+            (idx, dtype)
+        },
         Expression::Infix(expr) => {
             let (left_idx, left_dtype) = {
                 let (code, idx, dtype) = generate_expr(global_ctx, scoped_ctx, &expr.left).unwrap();
@@ -23,33 +33,21 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
                 (idx.to_string(), dtype)
             };
 
-            let (casted_idx, casted_dtype) = if left_dtype == right_dtype {
-                (&format!("{left_idx}"), left_dtype)
-            } else {
-                let casted_idx = global_ctx.get_label();
-                let (cast_code, casted_dtype) = cast()[&(left_dtype, right_dtype)](&left_idx, &format!("%{casted_idx}"));
+            let (left_idx, right_idx, dtype) = if left_dtype < right_dtype {
+                let (casted_idx, cast_code, _) = cast()[&(left_dtype, right_dtype)](global_ctx, &left_idx);
                 result += &cast_code;
-                (&format!("%{casted_idx}"), casted_dtype)
+                (casted_idx, right_idx, right_dtype)
+            } else if left_dtype > right_dtype {
+                let (casted_idx, cast_code, _) = cast()[&(right_dtype, left_dtype)](global_ctx, &right_idx);
+                result += &cast_code;
+                (left_idx, casted_idx, left_dtype)
+            } else {
+                (left_idx, right_idx, left_dtype)
             };
 
-            let idx = global_ctx.get_label();
-
-            match expr.operator {
-                Operator::Equal | Operator::NotEqual |
-                Operator::Less | Operator::LessEqual |
-                Operator::Greater | Operator::GreaterEqual => result += &format!("%{} = icmp {} {} {}, {}\n", idx, expr.operator.to_mnemonic(), casted_dtype.to_mnemonic(), left_idx, right_idx),
-                Operator::Plus => result += &format!("%{} = add nsw {} {}, {}\n", idx, casted_dtype.to_mnemonic(), casted_idx, right_idx),
-                Operator::Minus => result += &format!("%{} = sub nsw {} {}, {}\n", idx, casted_dtype.to_mnemonic(), casted_idx, right_idx),
-                Operator::Multiply => result += &format!("%{} = mul nsw {} {}, {}\n", idx, casted_dtype.to_mnemonic(), casted_idx, right_idx),
-                Operator::Divide => result += &format!("%{} = sdiv {} {}, {}\n", idx, casted_dtype.to_mnemonic(), casted_idx, right_idx),
-                Operator::Modulo => result += &format!("%{} = srem {} {}, {}\n", idx, casted_dtype.to_mnemonic(), casted_idx, right_idx),
-                Operator::LeftShift => result += &format!("%{} = shl {} {}, {}\n", idx, casted_dtype.to_mnemonic(), casted_idx, right_idx),
-                Operator::RightShift => result += &format!("%{} = ashr {} {}, {}\n", idx, casted_dtype.to_mnemonic(), casted_idx, right_idx),
-
-                _ => panic!("{} cannot be infix expression!", expr),
-            };
-
-            (format!("%{idx}"), casted_dtype)
+            let (idx, code) = infix_op()[&(dtype, expr.operator)](global_ctx, &left_idx, &right_idx);
+            result += &code;
+            (idx, dtype)
         },
         Expression::FnCall(expr) => {
             let fn_dtype = if global_ctx.fn_decl.contains_key(&expr.ident) {

@@ -3,15 +3,15 @@ use crate::{lexer::Literal, types::DataType};
 
 #[derive(Debug)]
 pub enum Expression {
-    Prefix(PrefixExpression), // TODO: Add DataType
-    Infix(InfixExpression), // TODO: Add DataType
-    FnCall(FnCallExpression), // TODO: Add DataType
-    Identifier(Identifier), // TODO: Add DataType
+    Unary(UnaryExpression),
+    Infix(InfixExpression),
+    FnCall(FnCallExpression),
+    Identifier(Identifier),
     Literal((Literal, DataType)),
 }
 
 #[derive(Debug)]
-pub struct PrefixExpression {
+pub struct UnaryExpression {
     pub operator: Operator,
     pub right: Box<Expression>,
 }
@@ -36,7 +36,7 @@ pub type Identifier = String;
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Prefix(expr) => write!(f, "{}", expr),
+            Self::Unary(expr) => write!(f, "{}", expr),
             Self::Infix(expr) => write!(f, "{}", expr),
             Self::FnCall(expr) => write!(f, "{}", expr),
             Self::Identifier(ident) => write!(f, "{}", ident),
@@ -45,7 +45,7 @@ impl fmt::Display for Expression {
     }
 }
 
-impl fmt::Display for PrefixExpression {
+impl fmt::Display for UnaryExpression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{ operator: {:?}, right: {} }}", self.operator, self.right)
     }
@@ -63,7 +63,7 @@ impl fmt::Display for FnCallExpression {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Operator {
     UnaryPlus,
     UnaryMinus,
