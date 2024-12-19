@@ -20,6 +20,10 @@ def fibo(n: i32) -> i32:
 def boom() -> i64:
     return b + e;
 
+def foo() -> i64:
+    let bar: i64 = 1;
+    return bar;
+
 def main() -> i32:
     puts("Hello, world!");
     puts(d);

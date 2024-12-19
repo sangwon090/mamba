@@ -21,9 +21,9 @@ pub struct GlobalContext {
     label_idx: u64,
 }
 
-#[derive(Default)]
-pub struct ScopedContext {
-    local_var: HashMap<String, Literal>,
+pub enum ScopedContext {
+    FnDecl(HashMap<String, DataType>),
+    Scope(HashMap<String, Literal>),
 }
 
 impl GlobalContext {
@@ -44,33 +44,45 @@ impl IRGen {
 
     pub fn generate_ir(&mut self) -> Result<String, IRGenError> {
         let mut result: String = String::new();
-        let mut scoped_ctx = ScopedContext::default();
+        let mut scoped_ctx = Vec::new();
 
         result += include_str!("stub.ll");
         result += &self.ast.iter()
-            .map(|stmt| IRGen::generate_stmt(&mut self.context, &mut scoped_ctx, stmt).unwrap())
+            .map(|stmt| IRGen::generate_global_stmt(&mut self.context, &mut scoped_ctx, stmt).unwrap())
             .collect::<Vec<String>>()
             .join("");
 
         Ok(result)
     }
 
-    fn generate_stmt(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &Statement) -> Result<String, IRGenError> {
+    fn generate_global_stmt(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &Statement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
         match stmt {
             Statement::Let(stmt) => result += &IRGen::generate_global_variable(global_ctx, scoped_ctx, stmt).unwrap(),
             Statement::Def(stmt) => result += &IRGen::generate_def(global_ctx, scoped_ctx, stmt).unwrap(),
-            Statement::If(stmt) => result += &IRGen::generate_if(global_ctx, scoped_ctx, stmt).unwrap(),
-            Statement::Return(stmt) => result += &IRGen::generate_ret(global_ctx, scoped_ctx, stmt).unwrap(),
-            Statement::Expression(stmt) => result += &generate_expr(global_ctx, scoped_ctx, &stmt.expr).unwrap().0,
             Statement::Extern(stmt) => result += &IRGen::generate_extern(global_ctx, scoped_ctx, stmt).unwrap(),
+            _ => panic!("{} cannot be global", stmt),
         }
 
         Ok(result)
     }
 
-    fn generate_global_variable(global_ctx: &mut GlobalContext, _scoped_ctx: &mut ScopedContext, stmt: &LetStatement) -> Result<String, IRGenError> {
+    fn generate_local_stmt(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &Statement) -> Result<String, IRGenError> {
+        let mut result = String::new();
+
+        match stmt {
+            Statement::Let(stmt) => result += &IRGen::generate_local_variable(global_ctx, scoped_ctx, stmt).unwrap(),
+            Statement::If(stmt) => result += &IRGen::generate_if(global_ctx, scoped_ctx, stmt).unwrap(),
+            Statement::Return(stmt) => result += &IRGen::generate_ret(global_ctx, scoped_ctx, stmt).unwrap(),
+            Statement::Expression(stmt) => result += &generate_expr(global_ctx, scoped_ctx, &stmt.expr).unwrap().0,
+            _ => panic!("{} cannot be local", stmt),
+        }
+
+        Ok(result)
+    }
+
+    fn generate_global_variable(global_ctx: &mut GlobalContext, _scoped_ctx: &mut Vec<ScopedContext>, stmt: &LetStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
         
         if let Expression::Literal((literal, _)) = &stmt.expr {
@@ -95,14 +107,48 @@ impl IRGen {
         Ok(result)
     }
 
-    fn generate_def(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &DefStatement) -> Result<String, IRGenError> {
+    fn generate_local_variable(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &LetStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
+        
+        if let Expression::Literal((literal, _)) = &stmt.expr {
+            if let ScopedContext::Scope(scope) = scoped_ctx.last_mut().unwrap() {
+                scope.insert(stmt.ident.clone(), literal.clone());
+            } else {
+                panic!("expected scope, something else found :(");
+            }
+
+            match literal {
+                Literal::SignedInteger((n, dtype)) => {
+                    result += &format!("%{} = alloca {}, align 4\n", stmt.ident.clone(), dtype.to_mnemonic());
+                    result += &format!("store {} {}, ptr %{}, align 4\n", dtype.to_mnemonic(), n, stmt.ident.clone());
+                },
+                Literal::UnsignedInteger((n, dtype)) => {
+                    result += &format!("%{} = alloca {}, align 4\n", stmt.ident.clone(), dtype.to_mnemonic());
+                    result += &format!("store {} {}, ptr %{}, align 4\n", dtype.to_mnemonic(), n, stmt.ident.clone());
+                },
+                Literal::String(s) => {
+                    result += &format!("%{} = private unnamed_addr constant [{} x i8] c\"{}\\00\"\n", stmt.ident, s.len() + 1, s);
+                },
+            }
+        } else {
+            eprintln!("{:?} in let expression is not implemented.", stmt.expr);
+        }
+
+        Ok(result)
+    }
+
+    fn generate_def(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &DefStatement) -> Result<String, IRGenError> {
+        let mut result = String::new();
+        // let mut ctx: ScopedContext = ScopedContext::default();
+        scoped_ctx.push(ScopedContext::FnDecl(HashMap::new()));
 
         result += &format!("define {} @{}(", stmt.r#type.to_mnemonic(), stmt.name);
         
+        let mut params: HashMap<String, DataType> = HashMap::new();
+
         result += &stmt.params.iter()
         .map(|(ident, dtype)| {
-                scoped_ctx.local_var.insert(ident.to_string(), Literal::SignedInteger((0, SignedInteger::i32)));
+                params.insert(ident.to_string(), *dtype);
                 format!("{} %{}", dtype.to_mnemonic(), ident)
             })
             .collect::<Vec<String>>()
@@ -111,20 +157,25 @@ impl IRGen {
         result += ") {\n";
 
         global_ctx.fn_decl.insert(stmt.name.to_string(), (stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>(), stmt.r#type));
+        scoped_ctx.push(ScopedContext::FnDecl(params));
 
         // add statements
+        scoped_ctx.push(ScopedContext::Scope(HashMap::new()));
         result += &stmt.stmts.iter()
-            .map(|stmt| IRGen::generate_stmt(global_ctx, scoped_ctx, stmt).unwrap())
+            .map(|stmt| IRGen::generate_local_stmt(global_ctx, scoped_ctx, stmt).unwrap())
             .collect::<Vec<String>>()
             .join("\n");
 
         result += "}\n";
 
+        scoped_ctx.pop(); // pop scope
+        scoped_ctx.pop(); // pop fn_decl
+
         Ok(result)
     }
 
 
-    fn generate_if(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &IfStatement) -> Result<String, IRGenError> {
+    fn generate_if(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &IfStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
         let then_idx = global_ctx.get_label();
         let else_idx = if stmt.r#else.is_some() { global_ctx.get_label() } else { 0 };
@@ -137,12 +188,12 @@ impl IRGen {
         
         // process then
         result += &format!("l{}:\n", then_idx);
-        result += &IRGen::generate_stmt(global_ctx, scoped_ctx, &stmt.then).unwrap();
+        result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, &stmt.then).unwrap();
 
         // process else
         if let Some(stmt) = &stmt.r#else {
             result += &format!("l{}:\n", else_idx);
-            result += &IRGen::generate_stmt(global_ctx, scoped_ctx, stmt).unwrap();
+            result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, stmt).unwrap();
     
         }
         
@@ -153,7 +204,7 @@ impl IRGen {
         Ok(result)
     }
 
-    fn generate_ret(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, stmt: &ReturnStatement) -> Result<String, IRGenError> {
+    fn generate_ret(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &ReturnStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
         let (code, idx, dtype) = generate_expr(global_ctx, scoped_ctx, &stmt.expr).unwrap();
@@ -169,7 +220,7 @@ impl IRGen {
         Ok(result)
     }
 
-    fn generate_literal(global_ctx: &mut GlobalContext, _scoped_ctx: &mut ScopedContext, literal: &Literal) -> Result<(String, u64), IRGenError> {
+    fn generate_literal(global_ctx: &mut GlobalContext, _scoped_ctx: &mut Vec<ScopedContext>, literal: &Literal) -> Result<(String, u64), IRGenError> {
         let mut result = String::new();
 
         let (idx, _dtype) = match literal {
@@ -205,7 +256,7 @@ impl IRGen {
         Ok((result, idx))
     }
 
-    fn generate_extern(global_ctx: &mut GlobalContext, _scoped_ctx: &mut ScopedContext, stmt: &ExternStatement) -> Result<String, IRGenError> {
+    fn generate_extern(global_ctx: &mut GlobalContext, _scoped_ctx: &mut Vec<ScopedContext>, stmt: &ExternStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
         global_ctx.fn_decl.insert(stmt.name.to_string(), (stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>(), stmt.r#type));

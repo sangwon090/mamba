@@ -7,4 +7,6 @@
  - [x] System for checking castable and operatable
  - [x] Casting between integer types
  - [x] Operation between integer types
+- [ ] Misc
+  - [ ] Change the way `Literal` works
 - [ ] Implement print() function.

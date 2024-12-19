@@ -1,11 +1,11 @@
 use types::{cast, infix_op, unary_op};
 
-use crate::parser::{Expression, Operator};
+use crate::parser::Expression;
 use crate::error::IRGenError;
 use crate::codegen::llvm::*;
 use crate::types::DataType;
 
-pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedContext, expr: &Expression) -> Result<(String, String, DataType), IRGenError> {
+pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, expr: &Expression) -> Result<(String, String, DataType), IRGenError> {
     let mut result = String::new();
 
     let (idx, dtype) = match expr {
@@ -17,7 +17,7 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
             };
 
             let (idx, code) = unary_op()[&(dtype, expr.operator)](global_ctx, &idx);
-            result += &format!("{code}\n");
+            result += &code;
             (idx, dtype)
         },
         Expression::Infix(expr) => {
@@ -85,34 +85,54 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut ScopedCont
             (format!("%{literal_idx}"), dtype)
         },
         Expression::Identifier(ident) => {
-            if scoped_ctx.local_var.contains_key(ident) {
-                let literal: &Literal = &scoped_ctx.local_var[ident];
-                
-                let dtype = match literal {
-                    Literal::SignedInteger((_, dtype)) => DataType::SignedInteger(*dtype),
-                    Literal::UnsignedInteger((_, dtype)) => DataType::UnsignedInteger(*dtype),
-                    Literal::String(_) => DataType::str,
-                };
-
-                (format!("%{ident}"), dtype)
-            } else if global_ctx.global_var.contains_key(ident) {
-                let literal: Literal = global_ctx.global_var[ident].clone();
-                
-                match literal {
-                    Literal::SignedInteger((_, dtype)) => {
-                        let new_idx = global_ctx.get_label();
-                        result += &format!("%{new_idx} = load {}, ptr @{}, align 4\n", dtype.to_mnemonic(), ident);
-                        (format!("%{new_idx}"), DataType::SignedInteger(dtype))
-                    },
-                    Literal::UnsignedInteger((_, dtype)) => {
-                        let new_idx = global_ctx.get_label();
-                        result += &format!("%{new_idx} = load {}, ptr @{}, align 4\n", dtype.to_mnemonic(), ident);
-                        (format!("%{new_idx}"), DataType::UnsignedInteger(dtype))
-                    },
-                    Literal::String(_) => (format!("@{ident}"), DataType::str),
+            let ctx: Vec<&ScopedContext> = scoped_ctx.iter().filter(|ctx| {
+                match ctx {
+                    ScopedContext::FnDecl(fn_decl) => fn_decl.contains_key(ident),
+                    ScopedContext::Scope(scope) => scope.contains_key(ident),
                 }
-                            } else {
-                panic!("identifier {} not found!", ident);
+            }).collect();
+
+            if ctx.len() > 0 {
+                match ctx.last().unwrap() {
+                    ScopedContext::FnDecl(fn_decl) => {
+                        (format!("%{ident}"), fn_decl[ident])
+                    },
+                    ScopedContext::Scope(scope) => {
+                        match scope[ident] {
+                            Literal::SignedInteger((_, dtype)) => {
+                                let new_idx = global_ctx.get_label();
+                                result += &format!("%{new_idx} = load {}, ptr %{}, align 4\n", dtype.to_mnemonic(), ident);
+                                (format!("%{new_idx}"), DataType::SignedInteger(dtype))
+                            },
+                            Literal::UnsignedInteger((_, dtype)) => {
+                                let new_idx = global_ctx.get_label();
+                                result += &format!("%{new_idx} = load {}, ptr %{}, align 4\n", dtype.to_mnemonic(), ident);
+                                (format!("%{new_idx}"), DataType::UnsignedInteger(dtype))
+                            },
+                            Literal::String(_) => (format!("%{ident}"), DataType::str),
+                        }
+                    }
+                }
+            } else {
+                if global_ctx.global_var.contains_key(ident) {
+                    let literal: Literal = global_ctx.global_var[ident].clone();
+                    
+                    match literal {
+                        Literal::SignedInteger((_, dtype)) => {
+                            let new_idx = global_ctx.get_label();
+                            result += &format!("%{new_idx} = load {}, ptr @{}, align 4\n", dtype.to_mnemonic(), ident);
+                            (format!("%{new_idx}"), DataType::SignedInteger(dtype))
+                        },
+                        Literal::UnsignedInteger((_, dtype)) => {
+                            let new_idx = global_ctx.get_label();
+                            result += &format!("%{new_idx} = load {}, ptr @{}, align 4\n", dtype.to_mnemonic(), ident);
+                            (format!("%{new_idx}"), DataType::UnsignedInteger(dtype))
+                        },
+                        Literal::String(_) => (format!("@{ident}"), DataType::str),
+                    }
+                } else {
+                    panic!("identifier {} not found!", ident);
+                }
             }
         },
     };

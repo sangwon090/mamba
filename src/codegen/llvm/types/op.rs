@@ -31,19 +31,19 @@ pub fn unary_op() -> &'static HashMap<(DataType, Operator), Box<FnUnaryOperation
 
             add_unary_operation!(op, DataType::SignedInteger(*ty), Operator::UnaryMinus, |ctx, src| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(),  format!("{} = sub nsw {} 0, {}", idx, ty.to_mnemonic(), src))
+                (idx.into(),  format!("{} = sub nsw {} 0, {}\n", idx, ty.to_mnemonic(), src))
             });
 
             add_unary_operation!(op, DataType::SignedInteger(*ty), Operator::BitwiseNot, |ctx, src| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = sub nsw {} 0, {}", idx, ty.to_mnemonic(), src))
+                (idx.into(), format!("{} = sub nsw {} 0, {}\n", idx, ty.to_mnemonic(), src))
             });
         }
 
         for ty in &UNSIGNED_INTEGERS {            
             add_unary_operation!(op, DataType::UnsignedInteger(*ty), Operator::BitwiseNot, |ctx, src| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = xor {} {}, -1", idx, ty.to_mnemonic(), src))
+                (idx.into(), format!("{} = xor {} {}, -1\n", idx, ty.to_mnemonic(), src))
             });
         }
 
@@ -60,14 +60,14 @@ pub fn infix_op() -> &'static HashMap<(DataType, Operator), Box<FnInfixOperation
             for ty in &SIGNED_INTEGERS {
                 add_infix_operation!(op, DataType::SignedInteger(*ty), *cmp, |ctx, left, right| {
                     let idx = &format!("%{}", ctx.get_label());
-                    (idx.into(), format!("{} = icmp {} {} {}, {}", idx, cmp.to_mnemonic(), ty.to_mnemonic(), left, right))
+                    (idx.into(), format!("{} = icmp {} {} {}, {}\n", idx, cmp.to_mnemonic(), ty.to_mnemonic(), left, right))
                 });
             }
 
             for ty in &UNSIGNED_INTEGERS {
                 add_infix_operation!(op, DataType::UnsignedInteger(*ty), *cmp, |ctx, left, right| {
                     let idx = &format!("%{}", ctx.get_label());
-                    (idx.into(), format!("{} = icmp {} {} {}, {}", idx, cmp.to_mnemonic(), ty.to_mnemonic(), left, right))
+                    (idx.into(), format!("{} = icmp {} {} {}, {}\n", idx, cmp.to_mnemonic(), ty.to_mnemonic(), left, right))
                 });
             }
         }
@@ -76,74 +76,74 @@ pub fn infix_op() -> &'static HashMap<(DataType, Operator), Box<FnInfixOperation
         for ty in &SIGNED_INTEGERS {
             add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::Plus, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = add nsw {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = add nsw {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::Minus, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = sub nsw {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = sub nsw {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::Multiply, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = mul nsw {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = mul nsw {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::Divide, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = sdiv {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = sdiv {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::Modulo, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = srem {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = srem {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::LeftShift, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = shl {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = shl {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::RightShift, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = ashr {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = ashr {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
         }
 
         for ty in &UNSIGNED_INTEGERS {
             add_infix_operation!(op, DataType::UnsignedInteger(*ty), Operator::Plus, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = add nsw {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = add nsw {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::UnsignedInteger(*ty), Operator::Minus, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = sub nsw {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = sub nsw {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::UnsignedInteger(*ty), Operator::Multiply, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = mul nsw {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = mul nsw {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::UnsignedInteger(*ty), Operator::Divide, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = sdiv {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = sdiv {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::UnsignedInteger(*ty), Operator::Modulo, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = srem {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = srem {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::UnsignedInteger(*ty), Operator::LeftShift, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = shl {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = shl {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
 
             add_infix_operation!(op, DataType::UnsignedInteger(*ty), Operator::RightShift, |ctx, left, right| {
                 let idx = &format!("%{}", ctx.get_label());
-                (idx.into(), format!("{} = ashr {} {}, {}", idx, ty.to_mnemonic(), left, right))
+                (idx.into(), format!("{} = ashr {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
         }
         op
