@@ -87,14 +87,14 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<Scoped
         Expression::Identifier(ident) => {
             let ctx: Vec<&ScopedContext> = scoped_ctx.iter().filter(|ctx| {
                 match ctx {
-                    ScopedContext::FnDecl(fn_decl) => fn_decl.contains_key(ident),
+                    ScopedContext::FnDecl(fn_decl, _) => fn_decl.contains_key(ident),
                     ScopedContext::Scope(scope) => scope.contains_key(ident),
                 }
             }).collect();
 
             if ctx.len() > 0 {
                 match ctx.last().unwrap() {
-                    ScopedContext::FnDecl(fn_decl) => {
+                    ScopedContext::FnDecl(fn_decl, _) => {
                         (format!("%{ident}"), fn_decl[ident])
                     },
                     ScopedContext::Scope(scope) => {

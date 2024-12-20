@@ -11,21 +11,13 @@ extern clock() -> i32;
 def fibo(n: i32) -> i32:
     if n <= 0:
         return 0;
+    elif n == 1:
+        return 1;
     else:
-        if n == 1:
-            return 1;
-        else:
-            return fibo(n - 2) + fibo(n - 1);
-
-def boom() -> i64:
-    return b + e;
-
-def foo() -> i64:
-    let bar: i64 = 1;
-    return bar;
+        return fibo(n - 2) + fibo(n - 1);
 
 def main() -> i32:
     puts("Hello, world!");
     puts(d);
     fflush(0);
-    return clock();
+    return fibo(10);

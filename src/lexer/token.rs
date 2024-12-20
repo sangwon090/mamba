@@ -66,6 +66,7 @@ pub enum Token {
 pub enum Keyword {
     If,
     Else,
+    Elif,
     Let,
     Def,
     Return,

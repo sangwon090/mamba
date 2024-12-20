@@ -1,13 +1,15 @@
 pub mod expr;
 pub mod types;
 
+use std::borrow::Borrow;
 use std::collections::HashMap;
 
-use crate::parser::{DefStatement, Expression, ExternStatement, IfStatement, LetStatement, ReturnStatement, Statement, AST};
+use crate::parser::{DefStatement, Expression, ExternStatement, IfBranch, IfStatement, LetStatement, ReturnStatement, Statement, AST};
 use crate::lexer::Literal;
 use crate::error::IRGenError;
 use crate::types::{DataType, SignedInteger};
 pub use expr::generate_expr;
+use types::cast;
 
 pub struct IRGen {
     ast: AST,
@@ -22,7 +24,7 @@ pub struct GlobalContext {
 }
 
 pub enum ScopedContext {
-    FnDecl(HashMap<String, DataType>),
+    FnDecl(HashMap<String, DataType>, DataType),
     Scope(HashMap<String, Literal>),
 }
 
@@ -139,8 +141,6 @@ impl IRGen {
 
     fn generate_def(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &DefStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
-        // let mut ctx: ScopedContext = ScopedContext::default();
-        scoped_ctx.push(ScopedContext::FnDecl(HashMap::new()));
 
         result += &format!("define {} @{}(", stmt.r#type.to_mnemonic(), stmt.name);
         
@@ -157,7 +157,7 @@ impl IRGen {
         result += ") {\n";
 
         global_ctx.fn_decl.insert(stmt.name.to_string(), (stmt.params.iter().map(|(_, dtype)| dtype.to_mnemonic().into()).collect::<Vec<String>>(), stmt.r#type));
-        scoped_ctx.push(ScopedContext::FnDecl(params));
+        scoped_ctx.push(ScopedContext::FnDecl(params, stmt.r#type));
 
         // add statements
         scoped_ctx.push(ScopedContext::Scope(HashMap::new()));
@@ -178,27 +178,36 @@ impl IRGen {
     fn generate_if(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &IfStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
         let then_idx = global_ctx.get_label();
-        let else_idx = if stmt.r#else.is_some() { global_ctx.get_label() } else { 0 };
-        //let cont_idx = global_ctx.get_label();
+        let else_idx = global_ctx.get_label();
 
         // process condition
         let (expr_code, expr_idx, _expr_dtype) = generate_expr(global_ctx, scoped_ctx, &stmt.condition).unwrap();
         result += &expr_code;
         result += &format!("br i1 {}, label %l{}, label %l{}\n", expr_idx, then_idx, else_idx);
-        
-        // process then
-        result += &format!("l{}:\n", then_idx);
-        result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, &stmt.then).unwrap();
 
-        // process else
-        if let Some(stmt) = &stmt.r#else {
+        if let IfBranch::None = *stmt.r#else {
+            result += &format!("l{}:\n", then_idx);
+            result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, &stmt.then).unwrap();
             result += &format!("l{}:\n", else_idx);
-            result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, stmt).unwrap();
+        } else {
+            // process then
+            result += &format!("l{}:\n", then_idx);
+            result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, &stmt.then).unwrap();
     
+            // process else
+            match stmt.r#else.borrow() {
+                IfBranch::Elif(stmt) => {
+                    result += &format!("l{}:\n", else_idx);
+                    result += &Self::generate_if(global_ctx, scoped_ctx, &stmt).unwrap();
+                },
+                IfBranch::Else(stmt) => {
+                    result += &format!("l{}:\n", else_idx);
+                    result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, &stmt).unwrap();
+                },
+                IfBranch::None => { },
+            }
         }
-        
-        // continue
-        //result += &format!("{}:\n", cont_idx);
+
 
         result += "\n";
         Ok(result)
@@ -209,12 +218,30 @@ impl IRGen {
 
         let (code, idx, dtype) = generate_expr(global_ctx, scoped_ctx, &stmt.expr).unwrap();
         
-        if idx.is_empty() {
+        let ret_dtype: Vec<DataType> = scoped_ctx.iter().filter_map(|ctx| {
+            if let ScopedContext::FnDecl(_, dtype) = ctx {
+                Some(*dtype)
+            } else {
+                None
+            }
+        }).collect();
+
+        let ret_dtype = ret_dtype.last().unwrap().clone(); // shitty code
+
+        let (idx, cast_code) = if ret_dtype != dtype {
+            let (casted_idx, cast_code, _) = cast()[&(dtype, ret_dtype)](global_ctx, &idx);
+            (casted_idx, cast_code)
+        } else {
+            (idx, String::new())
+        };
+
+        if idx.is_empty() { // what???
             result += &code;
             result += "ret\n";
         } else {
             result += &code;
-            result += &format!("ret {} {}\n", dtype.to_mnemonic(), idx);
+            result += &cast_code;
+            result += &format!("ret {} {}\n", ret_dtype.to_mnemonic(), idx);
         }
 
         Ok(result)

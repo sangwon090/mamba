@@ -130,7 +130,7 @@ impl PrattParser {
                 }
             }
             Token::Plus | Token::Minus | Token::Tilde => Some(PrattParser::parse_nud(parser).unwrap()),
-            _ => None
+            _ => { println!("unexpected token {token:?} found"); None }
         };
 
         let mut expr = prefix.unwrap();

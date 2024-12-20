@@ -34,6 +34,7 @@ impl Lexer {
     fn read_keyword(ident: &str) -> Token {
         match ident {
             "if" => Token::Keyword(Keyword::If),
+            "elif" => Token::Keyword(Keyword::Elif),
             "else" => Token::Keyword(Keyword::Else),
             "extern" => Token::Keyword(Keyword::Extern),
             "def" => Token::Keyword(Keyword::Def),
