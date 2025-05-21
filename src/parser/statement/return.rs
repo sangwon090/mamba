@@ -4,6 +4,7 @@ use crate::error::ParseError;
 use crate::parser::pratt::Precedence;
 use std::fmt;
 
+#[derive(Debug)]
 pub struct ReturnStatement {
     pub expr: Expression,
 }

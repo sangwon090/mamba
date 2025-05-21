@@ -5,6 +5,7 @@ use crate::types::DataType;
 use crate::parser::pratt::Precedence;
 use std::fmt;
 
+#[derive(Debug)]
 pub struct LetStatement {
     pub ident: Identifier,
     pub r#type: DataType,

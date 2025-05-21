@@ -6,16 +6,18 @@ use super::Statement;
 use std::borrow::Borrow;
 use std::fmt;
 
+#[derive(Debug)]
 pub struct IfStatement {
     pub condition: Expression,
-    pub then: Box<Statement>,
+    pub then: Vec<Statement>,
     pub r#else: Box<IfBranch>,
     // pub r#else: Option<Box<Statement>>,
 }
 
+#[derive(Debug)]
 pub enum IfBranch {
     Elif(IfStatement),
-    Else(Statement),
+    Else(Vec<Statement>),
     None,
 }
 
@@ -43,16 +45,24 @@ pub fn parse_if(parser: &mut Parser) -> Result<IfStatement, ParseError> {
         return Err(ParseError("[IfStatement] insufficient tokens".into()));
     }
 
-    let then = parser.parse_stmt().unwrap().unwrap();
+    let mut then: Vec<Statement> = Vec::new();
 
-    if let Some(token) = parser.next(0) {
-        if let Token::Dedent = token {
-            parser.pos += 1;
+    loop {
+        if let Some(token) = parser.next(0) {
+            if let Token::Dedent = token {
+                parser.pos += 1;
+                break;
+            } else if let Some(Token::Keyword(keyword)) = parser.next(0) {
+                if keyword == Keyword::Elif || keyword == Keyword::Else {
+                    break;
+                }
+            }
+
+            let stmt = parser.parse_stmt().unwrap().unwrap();
+            then.push(stmt);
         } else {
-            return Err(ParseError(format!("[IfStatement] expected dedent, found {token:?}")));
+            return Err(ParseError("[IfStatement] insufficient tokens".into()));
         }
-    } else {
-        return Err(ParseError("[IfStatement] insufficient tokens".into()));
     }
 
     let branch = if let Some(Token::Keyword(keyword)) = parser.next(0) {
@@ -84,8 +94,21 @@ pub fn parse_if(parser: &mut Parser) -> Result<IfStatement, ParseError> {
                 return Err(ParseError("[IfStatement] insufficient tokens".into()));
             }
     
-            let r#else = parser.parse_stmt().unwrap().unwrap();
-    
+            let mut r#else : Vec<Statement> = Vec::new();
+
+            loop {
+                if let Some(token) = parser.next(0) {
+                    if let Token::Dedent = token {
+                        break;
+                    }
+
+                    let stmt = parser.parse_stmt().unwrap().unwrap();
+                    r#else.push(stmt);
+                } else {
+                    return Err(ParseError("[IfStatement] insufficient tokens".into()));
+                }
+            }
+
             if let Some(token) = parser.next(0) {
                 if let Token::Dedent = token {
                     parser.pos += 1;
@@ -107,7 +130,7 @@ pub fn parse_if(parser: &mut Parser) -> Result<IfStatement, ParseError> {
 
     Ok(IfStatement {
         condition,
-        then: Box::new(then),
+        then,
         r#else: Box::new(branch),
     })
 
@@ -171,9 +194,9 @@ pub fn parse_if(parser: &mut Parser) -> Result<IfStatement, ParseError> {
 impl fmt::Display for IfStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.r#else.borrow() {
-            IfBranch::Elif(stmt) => write!(f, "{{ type: if, condition: {}, then: {}, else: {} }}", self.condition, self.then, stmt),
-            IfBranch::Else(stmt) => write!(f, "{{ type: if, condition: {}, then: {}, else: {} }}", self.condition, self.then, stmt),
-            IfBranch::None => write!(f, "{{ type: if, condition: {}, then: {} }}", self.condition, self.then),
+            IfBranch::Elif(stmt) => write!(f, "{{ type: if, condition: {}, then: {:?}, else: {} }}", self.condition, self.then, stmt),
+            IfBranch::Else(stmt) => write!(f, "{{ type: if, condition: {}, then: {:?}, else: {:?} }}", self.condition, self.then, stmt),
+            IfBranch::None => write!(f, "{{ type: if, condition: {}, then: {:?} }}", self.condition, self.then),
             _ => write!(f, ""),
         }
     }

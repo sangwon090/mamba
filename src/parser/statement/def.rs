@@ -4,6 +4,7 @@ use crate::parser::{Parser, Token, Identifier, Statement};
 use crate::error::ParseError;
 use crate::types::DataType;
 
+#[derive(Debug)]
 pub struct DefStatement {
     pub name: Identifier,
     pub params: Vec<(Identifier, DataType)>,

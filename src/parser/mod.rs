@@ -57,6 +57,10 @@ impl Parser {
                     Keyword::Extern => {
                         self.pos += 1;
                         Some(Statement::Extern(parse_extern(self).unwrap()))
+                    },
+                    Keyword::While => {
+                        self.pos += 1;
+                        Some(Statement::While(parse_while(self).unwrap()))
                     }
                     _ => {
                         self.pos += 1;

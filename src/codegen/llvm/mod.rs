@@ -4,7 +4,7 @@ pub mod types;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 
-use crate::parser::{DefStatement, Expression, ExternStatement, IfBranch, IfStatement, LetStatement, ReturnStatement, Statement, AST};
+use crate::parser::{DefStatement, Expression, ExternStatement, IfBranch, IfStatement, LetStatement, ReturnStatement, Statement, WhileStatement, AST};
 use crate::lexer::Literal;
 use crate::error::IRGenError;
 use crate::types::{DataType, SignedInteger};
@@ -78,6 +78,7 @@ impl IRGen {
             Statement::If(stmt) => result += &IRGen::generate_if(global_ctx, scoped_ctx, stmt).unwrap(),
             Statement::Return(stmt) => result += &IRGen::generate_ret(global_ctx, scoped_ctx, stmt).unwrap(),
             Statement::Expression(stmt) => result += &generate_expr(global_ctx, scoped_ctx, &stmt.expr).unwrap().0,
+            Statement::While(stmt) => result += &IRGen::generate_while(global_ctx, scoped_ctx, stmt).unwrap(),
             _ => panic!("{} cannot be local", stmt),
         }
 
@@ -187,13 +188,17 @@ impl IRGen {
 
         if let IfBranch::None = *stmt.r#else {
             result += &format!("l{}:\n", then_idx);
-            result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, &stmt.then).unwrap();
+            for then_stmt in &stmt.then {
+                result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, then_stmt).unwrap();
+            }
+
             result += &format!("l{}:\n", else_idx);
         } else {
             // process then
             result += &format!("l{}:\n", then_idx);
-            result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, &stmt.then).unwrap();
-    
+            for then_stmt in &stmt.then {
+                result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, then_stmt).unwrap();
+            }
             // process else
             match stmt.r#else.borrow() {
                 IfBranch::Elif(stmt) => {
@@ -202,12 +207,23 @@ impl IRGen {
                 },
                 IfBranch::Else(stmt) => {
                     result += &format!("l{}:\n", else_idx);
-                    result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, &stmt).unwrap();
+                    for else_stmt in stmt {
+                        result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, &else_stmt).unwrap();
+                    }
                 },
                 IfBranch::None => { },
             }
         }
 
+
+        result += "\n";
+        Ok(result)
+    }
+
+    fn generate_while(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &WhileStatement) -> Result<String, IRGenError> {
+        let mut result = String::new();
+
+        
 
         result += "\n";
         Ok(result)

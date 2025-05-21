@@ -40,6 +40,7 @@ impl Lexer {
             "def" => Token::Keyword(Keyword::Def),
             "let" => Token::Keyword(Keyword::Let),
             "return" => Token::Keyword(Keyword::Return),
+            "while" => Token::Keyword(Keyword::While),
 
             "void" => Token::Keyword(Keyword::DataType(DataType::void)),
             "bool" => Token::Keyword(Keyword::DataType(DataType::bool)),

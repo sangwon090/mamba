@@ -71,6 +71,7 @@ pub enum Keyword {
     Def,
     Return,
     Extern,
+    While,
     DataType(DataType),
 }
 

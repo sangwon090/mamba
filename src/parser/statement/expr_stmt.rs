@@ -1,6 +1,7 @@
 use crate::{error::ParseError, lexer::Token, parser::{pratt::{PrattParser, Precedence}, Expression, Parser}};
 use std::fmt;
 
+#[derive(Debug)]
 pub struct ExpressionStatement {
     pub expr: Expression,
 }

@@ -4,6 +4,7 @@ use crate::parser::{Parser, Token, Identifier};
 use crate::error::ParseError;
 use crate::types::DataType;
 
+#[derive(Debug)]
 pub struct ExternStatement {
     pub name: Identifier,
     pub params: Vec<(Identifier, DataType)>,

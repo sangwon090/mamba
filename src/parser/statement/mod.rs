@@ -5,6 +5,7 @@ pub use r#extern::{ExternStatement, parse_extern};
 pub use r#if::{IfStatement, IfBranch, parse_if};
 pub use r#let::{LetStatement, parse_let};
 pub use r#return::{ReturnStatement, parse_return};
+pub use r#while::{WhileStatement, parse_while};
 
 use std::fmt;
 
@@ -14,7 +15,9 @@ mod r#extern;
 mod r#if;
 mod r#let;
 mod r#return;
+mod r#while;
 
+#[derive(Debug)]
 pub enum Statement {
     Expression(ExpressionStatement),
     Def(DefStatement),
@@ -22,6 +25,7 @@ pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
     Extern(ExternStatement),
+    While(WhileStatement),
 }
 
 impl fmt::Display for Statement {
@@ -33,6 +37,7 @@ impl fmt::Display for Statement {
             Statement::Let(stmt) => write!(f, "{}", stmt),
             Statement::Return(stmt) => write!(f, "{}", stmt),
             Statement::Extern(stmt) => write!(f, "{}", stmt),
+            Statement::While(stmt) => write!(f, "{}", stmt),
         }
     }
 }
