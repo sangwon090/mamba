@@ -80,6 +80,7 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<Scoped
                 Literal::SignedInteger((_, dtype)) => DataType::SignedInteger(*dtype),
                 Literal::UnsignedInteger((_, dtype)) => DataType::UnsignedInteger(*dtype),
                 Literal::String(_) => DataType::str,
+                Literal::Boolean(_) => DataType::bool,
             };
 
             (format!("%{literal_idx}"), dtype)
@@ -110,6 +111,11 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<Scoped
                                 (format!("%{new_idx}"), DataType::UnsignedInteger(dtype))
                             },
                             Literal::String(_) => (format!("%{ident}"), DataType::str),
+                            Literal::Boolean(b) => {
+                                let new_idx = global_ctx.get_label();
+                                result += &format!("%{new_idx} = load {}, ptr %{}, align 4\n", "i8", ident);
+                                (format!("%{new_idx}"), DataType::bool)
+                            }
                         }
                     }
                 }
@@ -129,6 +135,11 @@ pub fn generate_expr(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<Scoped
                             (format!("%{new_idx}"), DataType::UnsignedInteger(dtype))
                         },
                         Literal::String(_) => (format!("@{ident}"), DataType::str),
+                        Literal::Boolean(b) => {
+                            let new_idx = global_ctx.get_label();
+                            result += &format!("%{new_idx} = load {}, ptr @{}, align 4\n", "i1", ident);;
+                            (format!("%{new_idx}"), DataType::bool)
+                        }
                     }
                 } else {
                     panic!("identifier {} not found!", ident);

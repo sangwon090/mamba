@@ -59,6 +59,9 @@ impl Lexer {
             "f64" => Token::Keyword(Keyword::DataType(DataType::FloatingPoint(FloatingPoint::f64))),
             "f128" => Token::Keyword(Keyword::DataType(DataType::FloatingPoint(FloatingPoint::f128))),
 
+            "True" => Token::Literal(Literal::Boolean(true)),
+            "False" => Token::Literal(Literal::Boolean(false)),
+
             _ => Token::Identifier(ident.into()),
         }
     }

@@ -38,15 +38,14 @@ pub fn parse_while(parser: &mut Parser) -> Result<WhileStatement, ParseError> {
     let mut blocks: Vec<Statement> = Vec::new();
 
     loop {
-        blocks.push(parser.parse_stmt().unwrap().unwrap());
 
         if let Some(token) = parser.next(0) {
             if let Token::Dedent = token {
                 parser.pos += 1;
                 break
-            } else {
-                return Err(ParseError(format!("[WhileStatement] expected dedent, found {token:?}")));
             }
+        
+            blocks.push(parser.parse_stmt().unwrap().unwrap());
         } else {
             return Err(ParseError("[WhileStatement] insufficient tokens".into()));
         }

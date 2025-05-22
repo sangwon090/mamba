@@ -102,6 +102,10 @@ impl IRGen {
                     global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
                     result += &format!("@{} = private unnamed_addr constant [{} x i8] c\"{}\\00\"\n", stmt.ident, s.len() + 1, s);
                 },
+                Literal::Boolean(b) => {
+                    global_ctx.global_var.insert(stmt.ident.clone(), literal.clone());
+                    result += &format!("@{} = global {} {}\n", stmt.ident, "i1", if *b { "1" } else { "0" });
+                }
             }
         } else {
             eprintln!("{:?} in let expression is not implemented.", stmt.expr);
@@ -132,6 +136,10 @@ impl IRGen {
                 Literal::String(s) => {
                     result += &format!("%{} = private unnamed_addr constant [{} x i8] c\"{}\\00\"\n", stmt.ident, s.len() + 1, s);
                 },
+                Literal::Boolean(b) => {
+                    result += &format!("%{} = alloca {}, align 4\n", stmt.ident.clone(), "i1");
+                    result += &format!("store {} {}, ptr %{}, align 4\n", "i1", if *b { "1" } else { "0" }, stmt.ident.clone());
+                }
             }
         } else {
             eprintln!("{:?} in let expression is not implemented.", stmt.expr);
@@ -223,9 +231,26 @@ impl IRGen {
     fn generate_while(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &WhileStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
 
-        
+        let check_idx = global_ctx.get_label();
+        let loop_idx = global_ctx.get_label();
+        let break_idx = global_ctx.get_label();
 
-        result += "\n";
+        let (expr_code, expr_idx, _expr_dtype) = generate_expr(global_ctx, scoped_ctx, &stmt.condition).unwrap();
+        result += &format!("br label %l{}\n", check_idx);
+        result += &format!("l{}:\n", check_idx);
+        result += &expr_code;
+        result += &format!("br i1 {}, label %l{}, label %l{}\n", expr_idx, loop_idx, break_idx);
+         
+        result += &format!("l{}:\n", loop_idx);
+        for stmt in &stmt.blocks {
+            result += &IRGen::generate_local_stmt(global_ctx, scoped_ctx, stmt).unwrap();
+        }
+
+        result += &format!("br label %l{}\n", check_idx);
+
+        result += &format!("l{}:\n", break_idx);
+        //result += "\n";
+
         Ok(result)
     }
 
@@ -286,13 +311,23 @@ impl IRGen {
                 result += &format!("%{} = load u32, ptr %{}, align 4\n", ret_idx, ptr_idx);
                 
                 (ret_idx, DataType::SignedInteger(SignedInteger::i32))
-            }
+            },
             Literal::String(s) => {
                 let ptr_idx = global_ctx.get_label();
                 result += &format!("%{} = alloca [{} x i8], align 4\n", ptr_idx, s.len() + 1);
                 result += &format!("store [{} x i8] c\"{}\\00\", ptr %{}, align 4\n", s.len() + 1, s, ptr_idx);
 
                 (ptr_idx, DataType::str)
+            },
+            Literal::Boolean(b) => {
+                let ptr_idx = global_ctx.get_label();
+                let ret_idx = global_ctx.get_label();
+
+                result += &format!("%{} = alloca i1, align 4\n", ptr_idx);
+                result += &format!("store i1 {}, ptr %{}, align 4\n", if *b { "1" } else { "0" }, ptr_idx);
+                result += &format!("%{} = load i1, ptr %{}, align 4\n", ret_idx, ptr_idx);
+
+                (ret_idx, DataType::bool)
             }
         };
 

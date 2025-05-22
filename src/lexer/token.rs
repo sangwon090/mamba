@@ -80,4 +80,5 @@ pub enum Literal {
     SignedInteger((i128, SignedInteger)),
     UnsignedInteger((u128, UnsignedInteger)),
     String(String), 
+    Boolean(bool),
 }

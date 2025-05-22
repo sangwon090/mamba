@@ -110,6 +110,9 @@ impl PrattParser {
                     Literal::String(s) => {
                         Some(Expression::Literal((Literal::String(s), DataType::str)))
                     },
+                    Literal::Boolean(b) => {
+                        Some(Expression::Literal((Literal::Boolean(b), DataType::bool)))
+                    }
                     // TODO: Unsigned Integer with 'u' suffix
                 }
             },
