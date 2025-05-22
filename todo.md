@@ -9,8 +9,12 @@
   - [x] Operation between integer types
 - [ ] Statements
   - [x] elif
-  - [ ] while
+  - [x] while
   - [ ] for
+- [ ] Expressions
+  - [ ] Assignment operators
+  - [ ] Increment/decrement operators
+- [ ] Use macro-based EBNF parser instead of the current handwritten parser
 - [ ] Re-design the language specificiation
 - [ ] Array
 - [ ] Pointer
@@ -19,3 +23,4 @@
 - [ ] Misc
   - [ ] Change the way `Literal` works
   - [ ] Better error/warning message
+  - [ ] Pretty LLVM IR output
