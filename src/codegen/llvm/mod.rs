@@ -114,7 +114,7 @@ impl IRGen {
         Ok(result)
     }
 
-    fn generate_local_variable(global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &LetStatement) -> Result<String, IRGenError> {
+    fn generate_local_variable(_global_ctx: &mut GlobalContext, scoped_ctx: &mut Vec<ScopedContext>, stmt: &LetStatement) -> Result<String, IRGenError> {
         let mut result = String::new();
         
         if let Expression::Literal((literal, _)) = &stmt.expr {
