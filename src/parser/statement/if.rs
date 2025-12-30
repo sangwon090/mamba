@@ -11,7 +11,6 @@ pub struct IfStatement {
     pub condition: Expression,
     pub then: Vec<Statement>,
     pub r#else: Box<IfBranch>,
-    // pub r#else: Option<Box<Statement>>,
 }
 
 #[derive(Debug)]
@@ -125,7 +124,6 @@ pub fn parse_if(parser: &mut Parser) -> Result<IfStatement, ParseError> {
         }
     } else {
         IfBranch::None
-        // end of if
     };
 
     Ok(IfStatement {

@@ -16,14 +16,12 @@ pub struct UnaryExpression {
     pub right: Box<Expression>,
 }
 
-
 #[derive(Debug)]
 pub struct InfixExpression {
     pub operator: Operator,
     pub left: Box<Expression>,
     pub right: Box<Expression>,
 }
-
 
 #[derive(Debug)]
 pub struct FnCallExpression {
@@ -85,6 +83,16 @@ pub enum Operator {
     LeftShift,
     RightShift,
     FnCall,
+    AssignPlus,
+    AssignMinus,
+    AssignMultiply,
+    AssignDivide,
+    AssignModulo,
+    AssignBitwiseAnd,
+    AssignBitwiseOr,
+    AssignBitwiseXor,
+    AssignLeftShift,
+    AssignRightShift,
 }
 
 impl Operator {

@@ -1,5 +1,5 @@
 use std::{collections::HashMap, sync::OnceLock};
-use crate::{codegen::llvm::GlobalContext, parser::Operator, types::DataType};
+use crate::{codegen::llvm::GlobalContext, lexer::Literal, parser::Operator, types::DataType};
 use super::{SIGNED_INTEGERS, UNSIGNED_INTEGERS};
 
 type FnUnaryOperation = dyn Fn(&mut GlobalContext, &str) -> (String, String) + Send + Sync + 'static;
@@ -146,6 +146,61 @@ pub fn infix_op() -> &'static HashMap<(DataType, Operator), Box<FnInfixOperation
                 (idx.into(), format!("{} = ashr {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
             });
         }
+
+        for ty in &SIGNED_INTEGERS {
+            add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::AssignPlus, |ctx, left, right| {
+                println!("=====> {:?}", left); 
+                // println!("changed: {} -> {}", ctx.global_var.get(left.))
+                let idx = &format!("%{}", ctx.get_label());
+                (idx.into(), format!("{} = add nsw {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
+            });
+
+            add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::AssignMinus, |ctx, left, right| {
+                let idx = &format!("%{}", ctx.get_label());
+                (idx.into(), format!("{} = sub nsw {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
+            });
+
+            add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::AssignMultiply, |ctx, left, right| {
+                let idx = &format!("%{}", ctx.get_label());
+                (idx.into(), format!("{} = mul nsw {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
+            });
+
+            add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::AssignDivide, |ctx, left, right| {
+                let idx = &format!("%{}", ctx.get_label());
+                (idx.into(), format!("{} = sdiv {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
+            });
+
+            add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::AssignModulo, |ctx, left, right| {
+                let idx = &format!("%{}", ctx.get_label());
+                (idx.into(), format!("{} = srem {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
+            });
+
+            add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::AssignBitwiseAnd, |ctx, left, right| {
+                let idx = &format!("%{}", ctx.get_label());
+                (idx.into(), format!("{} = and {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
+            });
+
+            add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::AssignBitwiseOr, |ctx, left, right| {
+                let idx = &format!("%{}", ctx.get_label());
+                (idx.into(), format!("{} = or {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
+            });
+
+            add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::AssignBitwiseXor, |ctx, left, right| {
+                let idx = &format!("%{}", ctx.get_label());
+                (idx.into(), format!("{} = xor {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
+            });
+
+            add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::AssignLeftShift, |ctx, left, right| {
+                let idx = &format!("%{}", ctx.get_label());
+                (idx.into(), format!("{} = shl {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
+            });
+
+            add_infix_operation!(op, DataType::SignedInteger(*ty), Operator::AssignRightShift, |ctx, left, right| {
+                let idx = &format!("%{}", ctx.get_label());
+                (idx.into(), format!("{} = ashr {} {}, {}\n", idx, ty.to_mnemonic(), left, right))
+            });
+        }
+
         op
     })
 }

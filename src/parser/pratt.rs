@@ -7,7 +7,7 @@ use super::expression::*;
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub enum Precedence {
     Lowest,
-    // Assignment,
+    Assignment,
     // Lambda,
     // IfElse,
     // BooleanOr,
@@ -56,6 +56,16 @@ impl PrattParser {
                 Token::Circumflex => Some(Operator::BitwiseXor),
                 Token::VBar => Some(Operator::BitwiseOr),
                 Token::LParen => Some(Operator::FnCall),
+                Token::PlusEqual => Some(Operator::AssignPlus),
+                Token::MinusEqual =>Some(Operator::AssignMinus),
+                Token::StarEqual => Some(Operator::AssignMultiply),
+                Token::SlashEqual => Some(Operator::AssignDivide),
+                Token::PercentEqual => Some(Operator::AssignModulo),
+                Token::AmpersandEqual => Some(Operator::AssignBitwiseAnd),
+                Token::VBarEqual => Some(Operator::AssignBitwiseOr),
+                Token::CircumflexEqual => Some(Operator::AssignBitwiseXor),
+                Token::LeftShiftEqual => Some(Operator::AssignLeftShift),
+                Token::RightShiftEqual => Some(Operator::AssignRightShift),
                 _ => None,
             }
         }
@@ -73,6 +83,10 @@ impl PrattParser {
             Operator::GreaterEqual => Precedence::LessGreater,
             Operator::Equal | Operator::NotEqual => Precedence::EqualNotEqual,
             Operator::FnCall => Precedence::FnCall,
+            Operator::AssignBitwiseAnd | Operator::AssignBitwiseOr | Operator::AssignBitwiseXor |
+            Operator::AssignDivide | Operator::AssignLeftShift | Operator::AssignMinus |
+            Operator::AssignModulo | Operator::AssignMultiply | Operator::AssignPlus |
+            Operator::AssignRightShift => Precedence::Assignment,
             _ => return Err(ParseError(format!("[PrattParser::get_precedence] unknown operator {:?}", operator)))
         })
     }
@@ -170,7 +184,12 @@ impl PrattParser {
                 Token::Star | Token::EqualEqual | Token::NotEqual |
                 Token::Less | Token::LessEqual | Token::Greater | 
                 Token::GreaterEqual | Token::Percent | Token::Ampersand |
-                Token::Circumflex | Token::VBar | Token::LParen => expr = PrattParser::parse_led(parser, expr).unwrap(),
+                Token::Circumflex | Token::VBar | Token::LParen |
+                Token::PlusEqual | Token::MinusEqual | Token::StarEqual |
+                Token::SlashEqual | Token::PercentEqual | Token::AmpersandEqual |
+                Token::VBarEqual | Token::CircumflexEqual |  Token::LeftShiftEqual |
+                Token::RightShiftEqual
+                => expr = PrattParser::parse_led(parser, expr).unwrap(),
                 Token::EOF => {
                     return Ok(expr);
                 }
